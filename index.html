@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GDP per Capita vs Calorie Intake Visualization</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="d3.v7.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>GDP per Capita vs Daily Calorie Intake</h1>
+
+      <div class="controls">
+        <div class="filter-section">
+          <label for="dataSelect">Data Dimension:</label>
+          <select id="dataSelect">
+            <option value="calories-gdp">GDP per Capita vs Daily Calories</option>
+            <option value="obesity-gdp">GDP per Capita vs Obesity Rate</option>
+            <option value="calories-obesity">Daily Calories vs Obesity Rate</option>
+          </select>
+        </div>
+
+        <div class="filter-section">
+          <label for="yearSelect">Year:</label>
+          <select id="yearSelect">
+            <option value="all">All Years</option>
+          </select>
+        </div>
+
+        <div class="filter-section">
+          <label for="countrySelect">Country:</label>
+          <select id="countrySelect">
+            <option value="all">All Countries</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="scatterplot"></div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
