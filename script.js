@@ -5,12 +5,18 @@ let macronutrientData = [];
 let currentData = [];
 let scatterplot;
 
-// Chart configuration
-const config = {
-  width: 800,
-  height: 600,
-  margin: { top: 50, right: 80, bottom: 80, left: 80 }
-};
+// Chart configuration - dynamically sized to fit container
+function getChartConfig() {
+  const container = document.getElementById('scatterplot');
+  const containerWidth = container.clientWidth;
+  const containerHeight = container.clientHeight;
+
+  return {
+    width: Math.max(300, containerWidth - 10), // Reduced padding from 20px to 10px
+    height: Math.max(200, containerHeight - 10), // Reduced padding from 40px to 10px
+    margin: { top: 20, right: 50, bottom: 50, left: 50 } // Reduced margins from 80px to 50px
+  };
+}
 
 // Load all datasets
 async function loadData() {
@@ -47,6 +53,7 @@ async function loadData() {
 
     // Initialize the visualization
     populateFilters();
+    initializeDefaults();
     setCurrentData();
     createScatterplot();
 
@@ -81,22 +88,66 @@ function populateFilters() {
     ...macronutrientData.map(d => d.country)
   ])].sort();
 
-  const countrySelect = d3.select('#countrySelect');
-  countrySelect.selectAll('option:not([value="all"])').remove();
-  countrySelect.selectAll('.country-option')
-    .data(allCountries)
+  // Populate country checkboxes
+  populateCountryCheckboxes(allCountries);
+}
+
+// Initialize default selections
+function initializeDefaults() {
+  // Set default year for slider
+  d3.select('#yearSlider').property('value', defaultYear);
+  d3.select('#yearValue').text(defaultYear);
+}
+
+// Default selected countries and year
+const defaultCountries = ['United States', 'Portugal', 'Spain', 'Brazil', 'Germany', 'France', 'Qatar', 'Mexico', 'Canada', 'Egypt'];
+const defaultYear = '2022';
+
+// Populate country checkboxes with search functionality
+function populateCountryCheckboxes(countries, preserveSelections = false) {
+  const container = d3.select('#countryCheckboxes');
+
+  // Store current selections if preserving
+  let currentSelections = [];
+  if (preserveSelections) {
+    currentSelections = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
+      .map(checkbox => checkbox.value);
+  }
+
+  container.selectAll('*').remove();
+
+  const checkboxes = container.selectAll('.country-checkbox')
+    .data(countries)
     .enter()
-    .append('option')
-    .attr('class', 'country-option')
+    .append('div')
+    .attr('class', 'country-checkbox');
+
+  checkboxes.append('input')
+    .attr('type', 'checkbox')
+    .attr('id', d => `country-${d.replace(/\s+/g, '-')}`)
     .attr('value', d => d)
+    .property('checked', d => {
+      if (preserveSelections) {
+        return currentSelections.includes(d);
+      }
+      return defaultCountries.includes(d);
+    })
+    .on('change', function() {
+      setCurrentData();
+      createScatterplot();
+    });
+
+  checkboxes.append('label')
+    .attr('for', d => `country-${d.replace(/\s+/g, '-')}`)
     .text(d => d);
 }
 
 // Set current data based on selected filters
 function setCurrentData() {
   const dataType = d3.select('#dataSelect').property('value');
-  const selectedYear = d3.select('#yearSelect').property('value');
-  const selectedCountry = d3.select('#countrySelect').property('value');
+  const selectedYear = d3.select('#yearSlider').property('value');
+  const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
+    .map(checkbox => checkbox.value);
 
   let baseData;
 
@@ -153,7 +204,7 @@ function setCurrentData() {
   // Apply filters
   currentData = baseData.filter(d => {
     const yearMatch = selectedYear === 'all' || d.year === +selectedYear;
-    const countryMatch = selectedCountry === 'all' || d.country === selectedCountry;
+    const countryMatch = selectedCountries.length > 0 && selectedCountries.includes(d.country);
     return yearMatch && countryMatch && !isNaN(d.x) && !isNaN(d.y);
   });
 }
@@ -173,15 +224,23 @@ function createScatterplot() {
     return;
   }
 
+  // Get dynamic configuration
+  const config = getChartConfig();
+
   // Create SVG
   const svg = d3.select('#scatterplot')
     .append('svg')
     .attr('width', config.width)
     .attr('height', config.height);
 
-  // Create scales
+  // Create scales - limit GDP scale to max $100,000
+  const isGdpOnX = currentData[0]?.xLabel?.includes('GDP');
+  const xDomain = isGdpOnX ?
+    [0, Math.min(160000, d3.max(currentData, d => d.x))] :
+    d3.extent(currentData, d => d.x);
+
   const xScale = d3.scaleLinear()
-    .domain(d3.extent(currentData, d => d.x))
+    .domain(xDomain)
     .nice()
     .range([config.margin.left, config.width - config.margin.right]);
 
@@ -267,8 +326,8 @@ function createScatterplot() {
   // Add axis labels
   svg.append('text')
     .attr('class', 'axis-label')
-    .attr('x', config.width / 2)
-    .attr('y', config.height - 20)
+    .attr('x', config.width / 2 )
+    .attr('y', config.height - 5) // Moved down from -20 to -5
     .attr('text-anchor', 'middle')
     .text(currentData[0]?.xLabel || 'X Axis');
 
@@ -276,7 +335,7 @@ function createScatterplot() {
     .attr('class', 'axis-label')
     .attr('transform', 'rotate(-90)')
     .attr('x', -config.height / 2)
-    .attr('y', 20)
+    .attr('y', 10) // Moved left from 20 to 15
     .attr('text-anchor', 'middle')
     .text(currentData[0]?.yLabel || 'Y Axis');
 }
@@ -324,16 +383,54 @@ document.addEventListener('DOMContentLoaded', function() {
     createScatterplot();
   });
 
-  d3.select('#yearSelect').on('change', function() {
+  // Year slider functionality
+  d3.select('#yearSlider').on('input', function() {
+    const year = this.value;
+    d3.select('#yearValue').text(year);
     setCurrentData();
     createScatterplot();
   });
 
-  d3.select('#countrySelect').on('change', function() {
+  // Country search functionality
+  d3.select('#countrySearch').on('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const allCountries = [...new Set([
+      ...caloriesGdpData.map(d => d.country),
+      ...obesityData.map(d => d.country),
+      ...macronutrientData.map(d => d.country)
+    ])].sort();
+
+    const filteredCountries = allCountries.filter(country =>
+      country.toLowerCase().includes(searchTerm)
+    );
+
+    populateCountryCheckboxes(filteredCountries, true);
+  });
+
+  // Country selection controls
+  d3.select('#selectAllCountries').on('click', function() {
+    d3.selectAll('#countryCheckboxes input[type="checkbox"]')
+      .property('checked', true);
+    setCurrentData();
+    createScatterplot();
+  });
+
+  d3.select('#clearAllCountries').on('click', function() {
+    d3.selectAll('#countryCheckboxes input[type="checkbox"]')
+      .property('checked', false);
     setCurrentData();
     createScatterplot();
   });
 
   // Load data and initialize
   loadData();
+
+  // Add resize listener to redraw chart when window resizes
+  window.addEventListener('resize', function() {
+    if (currentData.length > 0) {
+      setTimeout(() => {
+        createScatterplot();
+      }, 100); // Small delay to ensure container has resized
+    }
+  });
 });

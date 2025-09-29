@@ -21,15 +21,156 @@ h1 {
   font-size: 2.5em;
 }
 
-.controls {
+/* Top Section: Map + Controls */
+.top-section {
   display: flex;
-  justify-content: center;
-  gap: 30px;
-  margin-bottom: 30px;
-  padding: 20px;
+  gap: 20px;
+  margin-bottom: 20px;
+  height: 55vh;
+}
+
+.map-container {
+  flex: 3; /* Increased from 2 to 3 - map is now 3x larger than controls */
+  min-height: 100%;
+}
+
+.controls-panel {
+  flex: 1;
   background-color: #f8f9fa;
   border-radius: 8px;
-  flex-wrap: wrap;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-group label {
+  font-weight: bold;
+  color: #333;
+  font-size: 14px;
+}
+
+.control-group select {
+  padding: 8px 12px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  background-color: white;
+}
+
+/* Year Slider Styling */
+.year-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: #ddd;
+  outline: none;
+}
+
+.year-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #007bff;
+  cursor: pointer;
+}
+
+.year-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #007bff;
+  cursor: pointer;
+  border: none;
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #666;
+  margin-top: 5px;
+}
+
+#yearValue {
+  font-weight: bold;
+  color: #007bff;
+}
+
+/* Bottom Section: Charts */
+.bottom-section {
+  display: flex;
+  gap: 20px;
+  height: 35vh;
+}
+
+.chart-placeholder {
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  background-color: #fafafa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #666;
+  padding: 20px;
+  flex: 1;
+}
+
+.chart-container {
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  background-color: white;
+  padding: 5px; /* Reduced from 15px to 5px */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* Specific sizing for bottom charts */
+.scatter-plot-container {
+  flex: 2; /* Make scatter plot twice as wide */
+}
+
+.line-chart-placeholder {
+  flex: 1.2; /* Slightly larger than pie chart */
+}
+
+.pie-chart-placeholder {
+  flex: 0.8; /* Smaller pie chart */
+}
+
+.chart-container h4,
+.chart-placeholder h4 {
+  margin: 0 0 5px 0; /* Reduced from 10px to 5px */
+  font-size: 14px; /* Reduced from 16px to 14px */
+  color: #333;
+  text-align: center;
+}
+
+.scatter-plot-container {
+  /* Scatter plot specific styling */
+}
+
+/* Country Selection in Controls Panel */
+.country-selection .country-multiselect {
+  max-width: none;
+}
+
+.country-selection .checkbox-list {
+  max-height: 150px;
 }
 
 .filter-section {
@@ -55,6 +196,84 @@ h1 {
   transition: border-color 0.3s ease;
 }
 
+.filter-section select[multiple] {
+  min-width: 200px;
+  max-height: 200px;
+}
+
+.country-multiselect {
+  min-width: 300px;
+}
+
+.checkbox-container {
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  background-color: white;
+  margin-top: 5px;
+}
+
+.checkbox-controls {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  gap: 10px;
+  background-color: #f8f9fa;
+}
+
+.checkbox-controls button {
+  padding: 5px 10px;
+  font-size: 12px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  background-color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.checkbox-controls button:hover {
+  background-color: #e9ecef;
+}
+
+.checkbox-list {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.country-checkbox {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 2px 0;
+}
+
+.country-checkbox input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.country-checkbox label {
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  flex-grow: 1;
+}
+
+.country-checkbox:hover {
+  background-color: #f8f9fa;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+#countrySearch {
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  background-color: white;
+}
+
 .filter-section select:hover {
   border-color: #007bff;
 }
@@ -66,9 +285,14 @@ h1 {
 }
 
 #scatterplot {
+  flex-grow: 1;
   display: flex;
   justify-content: center;
-  margin-top: 20px;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  margin-left: 10px; /* Move scatter plot 5px to the right */
 }
 
 .axis text {
@@ -87,7 +311,7 @@ h1 {
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
   padding: 10px;
-  border-radius: 5px;
+  border-radius: 10px;
   font-size: 12px;
   pointer-events: none;
   opacity: 0;
