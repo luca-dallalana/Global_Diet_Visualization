@@ -37,9 +37,9 @@
           <!-- Year Slider -->
           <div class="control-group">
             <label for="yearSlider">Year: <span id="yearValue">2022</span></label>
-            <input type="range" id="yearSlider" min="1960" max="2022" value="2022" step="1" class="year-slider">
+            <input type="range" id="yearSlider" min="1961" max="2022" value="2022" step="1" class="year-slider">
             <div class="slider-labels">
-              <span>1960</span>
+              <span>1961</span>
               <span>2022</span>
             </div>
           </div>
@@ -86,14 +86,15 @@
           <p>Obesity evolution over time</p>
         </div>
 
-        <!-- Pie Chart Placeholder -->
-        <div class="chart-placeholder pie-chart-placeholder">
-          <h4>Pie Chart</h4>
-          <p>Macronutrient distribution</p>
+        <!-- Donut Chart -->
+        <div class="chart-container donut-chart-container">
+          <div id="donutchart"></div>
         </div>
       </div>
     </div>
 
+    <script src="idioms/scatterplot.js"></script>
+    <script src="idioms/donutchart.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
