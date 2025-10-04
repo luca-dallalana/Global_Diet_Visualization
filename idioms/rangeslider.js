@@ -64,17 +64,23 @@ function createYearRangeSlider() {
       const x = Math.max(0, Math.min(sliderWidth, event.x));
       const year = Math.round(xScale.invert(x)); // Converte posição para ano
 
-      // Reposiciona a barra (- 8 para centralizar na posição do mouse)
-      d3.select(this).attr('x', xScale(year) - 8);
+      let newYear = year;
 
-      // Atualiza os valores de início e fim do intervalo
+      // Impede que as barras se cruzem
       if (d.type === 'start') {
-        startYear = Math.min(year, endYear); // Não pode passar do fim
+        // Barra de início não pode passar da barra de fim
+        newYear = Math.max(minYear, Math.min(year, endYear));
+        startYear = newYear;
         d.year = startYear;
       } else {
-        endYear = Math.max(year, startYear); // Não pode ser menor que o início
+        // Barra de fim não pode ficar atrás da barra de início
+        newYear = Math.min(maxYear, Math.max(year, startYear));
+        endYear = newYear;
         d.year = endYear;
       }
+
+      // Reposiciona a barra (- 8 para centralizar na posição do mouse)
+      d3.select(this).attr('x', xScale(newYear) - 8);
 
       // Mantém o ano atual dentro do intervalo definido pelas barras
       currentYear = Math.max(startYear, Math.min(endYear, currentYear));
