@@ -3,17 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Título da página mostrado na aba do navegador -->
     <title>GDP per Capita vs Calorie Intake Visualization</title>
+    <!-- Link para o arquivo CSS com estilos da visualização -->
     <link rel="stylesheet" href="style.css" />
+    <!-- Biblioteca D3.js para criação dos gráficos interativos -->
     <script src="d3.v7.min.js"></script>
   </head>
   <body>
+    <!-- Container principal que engloba toda a visualização -->
     <div class="container">
+      <!-- Título principal da aplicação -->
       <h1>GDP per Capita vs Daily Calorie Intake</h1>
 
-      <!-- Top Section: Map + Controls -->
+      <!-- Seção superior: Mapa + Controles de filtros -->
       <div class="top-section">
-        <!-- Large Map Area -->
+        <!-- Área reservada para cloropeth -->
         <div class="map-container">
           <div class="chart-placeholder map-placeholder">
             <h3>World Choropleth Map</h3>
@@ -21,9 +26,9 @@
           </div>
         </div>
 
-        <!-- Controls Panel -->
+        <!-- Painel de controles para filtrar os dados mostrados nos gráficos -->
         <div class="controls-panel">
-          <!-- Nutrient Type Filter -->
+          <!-- Filtro de tipo de nutriente (para implementações futuras) -->
           <div class="control-group">
             <label for="nutrientSelect">Nutrient Type:</label>
             <select id="nutrientSelect">
@@ -34,32 +39,37 @@
             </select>
           </div>
 
-          <!-- Year Range Slider -->
+          <!-- Slider D3 para seleção de ano -->
           <div class="control-group">
             <label>Year Range:</label>
+            <!-- Container onde o slider D3 será inserido dinamicamente -->
             <div id="yearRangeSlider"></div>
           </div>
 
-          <!-- Scatter Plot Data Dimension -->
+          <!-- Seletor do tipo de dados mostrados no Scatterplot -->
           <div class="control-group">
             <label for="dataSelect">Scatter Plot Data:</label>
             <select id="dataSelect">
+              <!-- Alterar estas opções muda os dados disponíveis para visualização -->
               <option value="calories-gdp">GDP per Capita vs Daily Calories</option>
               <option value="obesity-gdp">GDP per Capita vs Obesity Rate</option>
               <option value="calories-obesity">Daily Calories vs Obesity Rate</option>
             </select>
           </div>
 
-          <!-- Country Selection -->
+          <!-- Seleção de países para filtrar os dados -->
           <div class="control-group country-selection">
             <label for="countrySelect">Countries:</label>
             <div class="country-multiselect">
+              <!-- Campo de busca para filtrar países por nome -->
               <input type="text" id="countrySearch" placeholder="Search countries..." />
               <div class="checkbox-container">
+                <!-- Botões para selecionar/desselecionar todos os países -->
                 <div class="checkbox-controls">
                   <button id="selectAllCountries" type="button">Select All</button>
                   <button id="clearAllCountries" type="button">Clear All</button>
                 </div>
+                <!-- Container onde as checkboxes dos países são inseridas dinamicamente -->
                 <div id="countryCheckboxes" class="checkbox-list">
                 </div>
               </div>
@@ -68,30 +78,35 @@
         </div>
       </div>
 
-      <!-- Bottom Section: Charts -->
+      <!-- Seção inferior: Gráficos principais da visualização -->
       <div class="bottom-section">
-        <!-- Scatter Plot (Implemented) -->
+        <!-- Scatterplot  -->
         <div class="chart-container scatter-plot-container">
           <h4>Scatter Plot Analysis</h4>
+          <!-- Container onde o Scatterplot é inserido -->
           <div id="scatterplot"></div>
         </div>
 
-        <!-- Multi-Line Chart Placeholder -->
+        <!-- Placeholder para gráfico de linhas múltiplas (implementação futura) -->
         <div class="chart-placeholder line-chart-placeholder">
           <h4>Multi-Line Chart</h4>
           <p>Obesity evolution over time</p>
         </div>
 
-        <!-- Donut Chart -->
+        <!-- Donut plot para distribuição de macronutrientes (implementado) -->
         <div class="chart-container donut-chart-container">
+          <!-- Container onde o Donut plot D3 é inserido -->
           <div id="donutchart"></div>
         </div>
       </div>
     </div>
 
-    <script src="idioms/scatterplot.js"></script>
-    <script src="idioms/donutchart.js"></script>
-    <script src="idioms/rangeslider.js"></script>
+    <!-- Scripts JavaScript: ordem de carregamento é importante -->
+    <!-- Componentes individuais dos gráficos -->
+    <script src="idioms/scatterplot.js"></script>  <!-- Funções do Scatterplot -->
+    <script src="idioms/donutchart.js"></script>   <!-- Funções do Donut plot -->
+    <script src="idioms/rangeslider.js"></script>  <!-- Funções do slider de anos -->
+    <!-- Script principal que coordena todos os componentes -->
     <script src="script.js"></script>
   </body>
 </html>

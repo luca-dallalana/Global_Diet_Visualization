@@ -1,14 +1,13 @@
-// Create donut chart for macronutrient distribution
 function createDonutChart() {
-  // Clear previous chart
+  // Limpa o gráfico anterior para evitar sobreposições
   d3.select('#donutchart').selectAll('*').remove();
 
-  // Get selected countries and current year
+  // Obtém os países selecionados e o ano atual do slider
   const currentYear = window.getCurrentYear ? window.getCurrentYear() : 2022;
   const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
     .map(checkbox => checkbox.value);
 
-  // Filter data for the current year and countries
+  // Filtra dados para o ano atual e países selecionados
   let yearData = macronutrientData.filter(d => d.year === currentYear);
 
   if (selectedCountries.length > 0) {
@@ -32,23 +31,23 @@ function createDonutChart() {
   const avgVegetalProtein = d3.mean(yearData, d => d.vegetalProtein);
   const totalProtein = avgAnimalProtein + avgVegetalProtein;
 
-  // Prepare data for donut chart
+  // Alterar as cores mudará as cores dos segmentos
   const donutData = [
-    { name: 'Carbohydrates', value: avgCarbohydrates, color: '#ff7f0e' },
-    { name: 'Fats', value: avgFat, color: '#2ca02c' },
-    { name: 'Proteins', value: totalProtein, color: '#1f77b4' }
+    { name: 'Carbohydrates', value: avgCarbohydrates, color: '#ff7f0e' }, 
+    { name: 'Fats', value: avgFat, color: '#2ca02c' },                  
+    { name: 'Proteins', value: totalProtein, color: '#1f77b4' }          
   ];
 
-  // Chart dimensions
+  // Dimensões do gráfico
   const width = 220;
   const height = 220;
   const margin = { top: 20, right: 20, bottom: 20, left: 20 };
   const radius = Math.min(width - margin.left - margin.right, height - margin.top - margin.bottom) / 2;
-  const innerRadius = radius * 0.6; // Creates donut hole
+  const innerRadius = radius * 0.6; // Cria o buraco central (0.6 = 60% do raio total, alterar para buraco maior/menor)
 
-  // Add title with total calories
+  // Número total de calorias para o título
   const totalCalories = d3.sum(donutData, d => d.value);
-  // Create title based on selection
+  // Titulo varia baseado no ano e paises selecionados
   let titleText = `Daily Calorie Distribution (${currentYear})`;
   if (selectedCountries.length === 1) {
     titleText = `${selectedCountries[0]} - ${titleText}`;
@@ -73,7 +72,7 @@ function createDonutChart() {
     .style('color', '#333')
     .text(`Total: ${totalCalories.toFixed(0)} calories`);
 
-  // Create SVG
+  // Cria SVG
   const svg = d3.select('#donutchart')
     .append('svg')
     .attr('width', width)
@@ -84,34 +83,29 @@ function createDonutChart() {
   const g = svg.append('g')
     .attr('transform', `translate(${width / 2}, ${height / 2})`);
 
-  // Create pie generator
+  // Cria a pie
   const pie = d3.pie()
     .value(d => d.value)
     .sort(null);
 
-  // Create arc generator
+  // Cria os arcos
   const arc = d3.arc()
     .innerRadius(innerRadius)
     .outerRadius(radius);
 
-  // Create arc for labels
-  const labelArc = d3.arc()
-    .innerRadius(radius + 10)
-    .outerRadius(radius + 10);
-
-  // Create tooltip
+  // Cria a tooltip
   const tooltip = d3.select('body')
     .append('div')
     .attr('class', 'tooltip');
 
-  // Create pie slices
+  // Cria a separação dos segmentos
   const slices = g.selectAll('.slice')
     .data(pie(donutData))
     .enter()
     .append('g')
     .attr('class', 'slice');
 
-  // Add paths for slices
+  // Adiciona o path dos segmentos
   slices.append('path')
     .attr('d', arc)
     .style('fill', d => d.data.color)
@@ -141,7 +135,7 @@ function createDonutChart() {
       tooltip.style('opacity', 0);
     });
 
-  // Add percentage labels on slices
+  // Adiciona percentagens dentro dos segmentos
   slices.append('text')
     .attr('transform', d => `translate(${arc.centroid(d)})`)
     .attr('text-anchor', 'middle')
@@ -155,7 +149,7 @@ function createDonutChart() {
       return percentage > 5 ? `${percentage.toFixed(1)}%` : '';
     });
 
-  // Add center text showing individual macronutrient values
+  // Adiciona textos no centro do donut
   const centerG = g.append('g')
     .attr('class', 'center-text')
     .style('text-anchor', 'middle');

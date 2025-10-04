@@ -1,8 +1,8 @@
-// Create scatter plot
 function createScatterplot() {
-  // Clear previous chart
+  // Limpa o gráfico anterior para evitar sobreposições
   d3.select('#scatterplot').selectAll('*').remove();
 
+  // Verifica se há dados para mostrar com os filtros atuais
   if (currentData.length === 0) {
     d3.select('#scatterplot')
       .append('div')
@@ -13,50 +13,52 @@ function createScatterplot() {
     return;
   }
 
-  // Get dynamic configuration
+  // Obtém configurações de dimensões fixas do gráfico
   const config = getChartConfig();
 
-  // Create SVG
+  // Cria elemento SVG principal
+  // margin-top negativo move o gráfico para cima no container
   const svg = d3.select('#scatterplot')
     .append('svg')
     .attr('width', config.width)
     .attr('height', config.height)
-    .style('margin-top', '-20px');
+    .style('margin-top', '-20px'); // Alterar para mover para cima
 
-  // Create scales - limit GDP scale to max $100,000
+  // Cria escalas - limita escala do PIB para máximo $160,000
   const isGdpOnX = currentData[0]?.xLabel?.includes('GDP');
   const xDomain = isGdpOnX ?
-    [0, Math.min(160000, d3.max(currentData, d => d.x))] :
+    [0, Math.min(160000, d3.max(currentData, d => d.x))] : // Alterar 160000 para mudar limite máximo
     d3.extent(currentData, d => d.x);
 
+  // Escala X: mapeia valores dos dados para posições horizontais
   const xScale = d3.scaleLinear()
-    .domain(xDomain)
-    .nice()
-    .range([config.margin.left, config.width - config.margin.right]);
+    .domain(xDomain) // Intervalo dos dados
+    .nice() // Arredonda os valores para números "limpos"
+    .range([config.margin.left, config.width - config.margin.right]); // Posições em pixels
 
+  // Escala Y: mapeia valores dos dados para posições verticais
   const yScale = d3.scaleLinear()
-    .domain(d3.extent(currentData, d => d.y))
+    .domain(d3.extent(currentData, d => d.y)) // Min/max dos dados Y
     .nice()
-    .range([config.height - config.margin.bottom, config.margin.top]);
+    .range([config.height - config.margin.bottom, config.margin.top]); // Invertido (topo = menor valor)
 
-  // Single color for all countries
   const pointColor = 'steelblue';
 
-  // Create tooltip
+  // Cria tooltip para mostrar informações ao passar o mouse
   const tooltip = d3.select('body')
     .append('div')
     .attr('class', 'tooltip');
 
-  // Draw circles
+  // Desenha círculos para cada ponto de dados
   svg.selectAll('.circle')
     .data(currentData)
     .enter()
     .append('circle')
     .attr('class', 'circle')
-    .attr('cx', d => xScale(d.x))
+    .attr('cx', d => xScale(d.x)) 
     .attr('cy', d => yScale(d.y))
-    .attr('r', 5)
-    .attr('fill', pointColor)
+    .attr('r', 5) 
+    .attr('fill', pointColor) 
     .on('mouseover', function(event, d) {
       d3.select(this).attr('r', 7);
       tooltip
@@ -151,20 +153,22 @@ function createScatterplot() {
     .text(currentData[0]?.yLabel || 'Y Axis');
 }
 
-// Calculate linear regression
 function calculateLinearRegression(data) {
   if (data.length < 2) return null;
 
+  // Extrai valores X e Y dos dados
   const xValues = data.map(d => d.x);
   const yValues = data.map(d => d.y);
   const n = data.length;
 
+  // Calcula médias dos valores X e Y
   const xMean = d3.mean(xValues);
   const yMean = d3.mean(yValues);
 
-  let numerator = 0;
-  let denominator = 0;
-  let totalSumSquares = 0;
+  // Variáveis para cálculo da regressão linear
+  let numerator = 0;   
+  let denominator = 0; 
+  let totalSumSquares = 0; 
 
   for (let i = 0; i < n; i++) {
     numerator += (xValues[i] - xMean) * (yValues[i] - yMean);
@@ -175,7 +179,6 @@ function calculateLinearRegression(data) {
   const slope = numerator / denominator;
   const intercept = yMean - slope * xMean;
 
-  // Calculate R-squared
   let residualSumSquares = 0;
   for (let i = 0; i < n; i++) {
     const predicted = slope * xValues[i] + intercept;
