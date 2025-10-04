@@ -20,7 +20,8 @@ function createScatterplot() {
   const svg = d3.select('#scatterplot')
     .append('svg')
     .attr('width', config.width)
-    .attr('height', config.height);
+    .attr('height', config.height)
+    .style('margin-top', '-20px');
 
   // Create scales - limit GDP scale to max $100,000
   const isGdpOnX = currentData[0]?.xLabel?.includes('GDP');
@@ -38,10 +39,8 @@ function createScatterplot() {
     .nice()
     .range([config.height - config.margin.bottom, config.margin.top]);
 
-  // Color scale by country
-  const uniqueCountries = [...new Set(currentData.map(d => d.country))];
-  const colorScale = d3.scaleOrdinal(d3.schemeCategory10)
-    .domain(uniqueCountries);
+  // Single color for all countries
+  const pointColor = 'steelblue';
 
   // Create tooltip
   const tooltip = d3.select('body')
@@ -57,7 +56,7 @@ function createScatterplot() {
     .attr('cx', d => xScale(d.x))
     .attr('cy', d => yScale(d.y))
     .attr('r', 5)
-    .attr('fill', d => colorScale(d.country))
+    .attr('fill', pointColor)
     .on('mouseover', function(event, d) {
       d3.select(this).attr('r', 7);
       tooltip
@@ -101,24 +100,47 @@ function createScatterplot() {
       .text(`R² = ${regression.rSquared.toFixed(3)}`);
   }
 
-  // Add axes
+  // Create custom tick values and formatters
+  const isGdpOnXAxis = currentData[0]?.xLabel?.includes('GDP');
+
+  // X-axis with custom ticks
+  let xAxis;
+  if (isGdpOnXAxis) {
+    const xTickValues = [0, 20000, 40000, 60000, 80000, 100000, 120000, 140000, 160000];
+    xAxis = d3.axisBottom(xScale)
+      .tickValues(xTickValues)
+      .tickFormat(d => d / 1000);
+  } else {
+    xAxis = d3.axisBottom(xScale).ticks(8);
+  }
+
+  // Y-axis with custom ticks
+  const yTickValues = d3.range(d3.min(currentData, d => d.y), d3.max(currentData, d => d.y) + 1,
+    (d3.max(currentData, d => d.y) - d3.min(currentData, d => d.y)) / 6);
+  const yAxis = d3.axisLeft(yScale).tickValues(yTickValues);
+
   svg.append('g')
     .attr('class', 'axis')
     .attr('transform', `translate(0,${config.height - config.margin.bottom})`)
-    .call(d3.axisBottom(xScale));
+    .call(xAxis);
 
   svg.append('g')
     .attr('class', 'axis')
     .attr('transform', `translate(${config.margin.left},0)`)
-    .call(d3.axisLeft(yScale));
+    .call(yAxis);
 
-  // Add axis labels
+  // Add axis labels with thousands notation
+  let xLabel = currentData[0]?.xLabel;
+  if (isGdpOnXAxis) {
+    xLabel = xLabel.replace('($)', '(thousands $)');
+  }
+
   svg.append('text')
     .attr('class', 'axis-label')
     .attr('x', config.width / 2 )
     .attr('y', config.height - 5)
     .attr('text-anchor', 'middle')
-    .text(currentData[0]?.xLabel || 'X Axis');
+    .text(xLabel);
 
   svg.append('text')
     .attr('class', 'axis-label')

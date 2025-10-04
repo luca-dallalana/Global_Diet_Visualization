@@ -3,13 +3,13 @@ function createDonutChart() {
   // Clear previous chart
   d3.select('#donutchart').selectAll('*').remove();
 
-  // Get selected countries and year
-  const selectedYear = d3.select('#yearSlider').property('value');
+  // Get selected countries and current year
+  const currentYear = window.getCurrentYear ? window.getCurrentYear() : 2022;
   const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
     .map(checkbox => checkbox.value);
 
-  // Filter data for the selected year and countries
-  let yearData = macronutrientData.filter(d => d.year === +selectedYear);
+  // Filter data for the current year and countries
+  let yearData = macronutrientData.filter(d => d.year === currentYear);
 
   if (selectedCountries.length > 0) {
     yearData = yearData.filter(d => selectedCountries.includes(d.country));
@@ -49,7 +49,7 @@ function createDonutChart() {
   // Add title with total calories
   const totalCalories = d3.sum(donutData, d => d.value);
   // Create title based on selection
-  let titleText = `Daily Calorie Distribution (${selectedYear})`;
+  let titleText = `Daily Calorie Distribution (${currentYear})`;
   if (selectedCountries.length === 1) {
     titleText = `${selectedCountries[0]} - ${titleText}`;
   } else if (selectedCountries.length > 1) {

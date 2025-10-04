@@ -5,16 +5,12 @@ let macronutrientData = [];
 let currentData = [];
 let scatterplot;
 
-// Chart configuration - dynamically sized to fit container
+// Chart configuration Removi resizing
 function getChartConfig() {
-  const container = document.getElementById('scatterplot');
-  const containerWidth = container.clientWidth;
-  const containerHeight = container.clientHeight;
-
   return {
-    width: Math.max(300, containerWidth - 10), // Reduced padding from 20px to 10px
-    height: Math.max(200, containerHeight - 10), // Reduced padding from 40px to 10px
-    margin: { top: 20, right: 50, bottom: 50, left: 50 } // Reduced margins from 80px to 50px
+    width: 500,
+    height: 250,
+    margin: { top: 20, right: 40, bottom: 40, left: 50 }
   };
 }
 
@@ -57,6 +53,7 @@ async function loadData() {
     setCurrentData();
     createScatterplot();
     createDonutChart();
+    createYearRangeSlider();
 
   } catch (error) {
     console.error('Error loading data:', error);
@@ -147,7 +144,8 @@ function populateCountryCheckboxes(countries, preserveSelections = false) {
 // Set current data based on selected filters
 function setCurrentData() {
   const dataType = d3.select('#dataSelect').property('value');
-  const selectedYear = d3.select('#yearSlider').property('value');
+  // Get current year from D3 slider circle or fall back to default
+  const currentYear = window.getCurrentYear ? window.getCurrentYear() : 2022;
   const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
     .map(checkbox => checkbox.value);
 
@@ -205,7 +203,7 @@ function setCurrentData() {
 
   // Apply filters
   currentData = baseData.filter(d => {
-    const yearMatch = selectedYear === 'all' || d.year === +selectedYear;
+    const yearMatch = d.year === currentYear;
     const countryMatch = selectedCountries.length > 0 && selectedCountries.includes(d.country);
     return yearMatch && countryMatch && !isNaN(d.x) && !isNaN(d.y);
   });
@@ -220,14 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
     createScatterplot();
   });
 
-  // Year slider functionality
-  d3.select('#yearSlider').on('input', function() {
-    const year = this.value;
-    d3.select('#yearValue').text(year);
-    setCurrentData();
-    createScatterplot();
-    createDonutChart();
-  });
+  // Note: Year slider functionality is now handled by the D3 range slider component
 
   // Country search functionality
   d3.select('#countrySearch').on('input', function() {
@@ -265,13 +256,4 @@ document.addEventListener('DOMContentLoaded', function() {
   // Load data and initialize
   loadData();
 
-  // Add resize listener to redraw charts when window resizes
-  window.addEventListener('resize', function() {
-    if (currentData.length > 0) {
-      setTimeout(() => {
-        createScatterplot();
-        createDonutChart();
-      }, 100); // Small delay to ensure container has resized
-    }
-  });
 });
