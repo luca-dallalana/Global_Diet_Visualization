@@ -30,13 +30,13 @@ function createDonutChart(selector = '#donutchart') {
   const avgFat = d3.mean(yearData, d => d.fat);
   const avgAnimalProtein = d3.mean(yearData, d => d.animalProtein);
   const avgVegetalProtein = d3.mean(yearData, d => d.vegetalProtein);
-  const totalProtein = avgAnimalProtein + avgVegetalProtein;
 
   // Alterar as cores mudará as cores dos segmentos
   const donutData = [
-    { name: 'Carbohydrates', value: avgCarbohydrates, color: '#ff7f0e' }, 
-    { name: 'Fats', value: avgFat, color: '#2ca02c' },                  
-    { name: 'Proteins', value: totalProtein, color: '#1f77b4' }          
+    { name: 'Carbohydrates', value: avgCarbohydrates, color: '#ff7f0e' },
+    { name: 'Fats', value: avgFat, color: '#2ca02c' },
+    { name: 'Animal Protein', value: avgAnimalProtein, color: '#1f77b4' },
+    { name: 'Vegetal Protein', value: avgVegetalProtein, color: '#9467bd' }
   ];
 
   // Dimensões do gráfico
@@ -78,7 +78,7 @@ function createDonutChart(selector = '#donutchart') {
     .append('svg')
     .attr('width', width)
     .attr('height', height)
-    .style('margin-left', '10px')
+    .style('margin-left', '80px')
     .style('margin-top', '-10px');
 
   const g = svg.append('g')
@@ -156,25 +156,32 @@ function createDonutChart(selector = '#donutchart') {
     .style('text-anchor', 'middle');
 
   centerG.append('text')
-    .attr('y', -20)
-    .style('font-size', '12px')
+    .attr('y', -25)
+    .style('font-size', '11px')
     .style('font-weight', 'bold')
     .style('fill', '#ff7f0e')
     .text(`Carbs: ${avgCarbohydrates.toFixed(0)}`);
 
   centerG.append('text')
-    .attr('y', 0)
-    .style('font-size', '12px')
+    .attr('y', -10)
+    .style('font-size', '11px')
     .style('font-weight', 'bold')
     .style('fill', '#2ca02c')
     .text(`Fats: ${avgFat.toFixed(0)}`);
 
   centerG.append('text')
-    .attr('y', 20)
-    .style('font-size', '12px')
+    .attr('y', 5)
+    .style('font-size', '11px')
     .style('font-weight', 'bold')
     .style('fill', '#1f77b4')
-    .text(`Proteins: ${totalProtein.toFixed(0)}`);
+    .text(`Animal: ${avgAnimalProtein.toFixed(0)}`);
+
+  centerG.append('text')
+    .attr('y', 20)
+    .style('font-size', '11px')
+    .style('font-weight', 'bold')
+    .style('fill', '#9467bd')
+    .text(`Vegetal: ${avgVegetalProtein.toFixed(0)}`);
 
 
 }
