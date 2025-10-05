@@ -67,6 +67,14 @@ body {
   gap: 15px;
 }
 
+.control-group:first-child {
+  margin-top: -10px;
+}
+
+.control-group:nth-child(2) {
+  margin-top: 10px;
+}
+
 .checkbox-list {
   max-height: 150px;
   overflow-y: auto;

@@ -49,6 +49,7 @@ async function loadData() {
     setCurrentData();         // Filtra dados baseado nas seleções iniciais
     createScatterplot('.ScatterPlot');      // Cria Scatterplot
     createDonutChart('.DonutChart');        // Cria Donut Plot
+    createLineChart('.LineChart');          // Cria Line Chart
     createYearRangeSlider();  // Cria slider D3 de anos
     setupEventListeners();    // Configura event listeners
 
@@ -119,6 +120,7 @@ function populateCountryCheckboxes(countries, preserveSelections = false) {
       setCurrentData();
       createScatterplot();
       createDonutChart();
+      createLineChart();
     });
 
   // Adiciona label clicável para cada país
@@ -210,6 +212,11 @@ function setupEventListeners() {
     createScatterplot('.ScatterPlot');     // Redesenha scatter plot
   });
 
+  // Listener para mudança no filtro do line chart
+  d3.select('#filterSelect').on('change', function() {
+    createLineChart('.LineChart');     // Redesenha line chart com novo filtro
+  });
+
   // Funcionalidade de busca de países
   d3.select('#countrySearch').on('input', function() {
     const searchTerm = this.value.toLowerCase();
@@ -236,6 +243,7 @@ function setupEventListeners() {
     setCurrentData();
     createScatterplot('.ScatterPlot');
     createDonutChart('.DonutChart');
+    createLineChart('.LineChart');
   });
 
   d3.select('#clearAllCountries').on('click', function() {
@@ -245,5 +253,6 @@ function setupEventListeners() {
     setCurrentData();
     createScatterplot('.ScatterPlot');
     createDonutChart('.DonutChart');
+    createLineChart('.LineChart');
   });
 }

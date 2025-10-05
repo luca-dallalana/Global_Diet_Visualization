@@ -86,6 +86,7 @@ function createYearRangeSlider() {
       currentYear = Math.max(startYear, Math.min(endYear, currentYear));
 
       updateSlider();
+      createLineChart(); // Atualiza line chart quando o intervalo muda
     })
     .on('end', function(event, d) {
       // Restaura a cor da borda original
@@ -180,9 +181,9 @@ function createYearRangeSlider() {
   const yearDisplay = d3.select('#yearRangeSlider')
     .append('div')
     .style('text-align', 'center') // Centraliza o texto
-    .style('margin-top', '5px')    // Espaço acima do texto
-    .style('font-size', '14px')    
-    .style('font-weight', 'bold') 
+    .style('margin-top', '0px')    // Remove espaço acima do texto para alinhar
+    .style('font-size', '14px')
+    .style('font-weight', 'bold')
     .text(`Current Year: ${currentYear} | Range: ${startYear} - ${endYear}`);
 
   function updateSlider() {
@@ -202,6 +203,7 @@ function createYearRangeSlider() {
     setCurrentData();
     createScatterplot();
     createDonutChart();
+    createLineChart();
   }
 
   // Funções exportadas para uso por outros componentes
