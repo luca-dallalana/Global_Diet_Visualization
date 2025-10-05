@@ -1,6 +1,7 @@
-function createDonutChart() {
+function createDonutChart(selector = '#donutchart') {
   // Limpa o gráfico anterior para evitar sobreposições
-  d3.select('#donutchart').selectAll('*').remove();
+  const container = selector.startsWith('.') ? d3.select(selector).select('#donutchart') : d3.select(selector);
+  container.selectAll('*').remove();
 
   // Obtém os países selecionados e o ano atual do slider
   const currentYear = window.getCurrentYear ? window.getCurrentYear() : 2022;
@@ -15,7 +16,7 @@ function createDonutChart() {
   }
 
   if (yearData.length === 0) {
-    d3.select('#donutchart')
+    container
       .append('div')
       .style('text-align', 'center')
       .style('padding', '50px')
@@ -57,13 +58,13 @@ function createDonutChart() {
     titleText = `Global - ${titleText}`;
   }
 
-  d3.select('#donutchart')
+  container
     .append('h4')
     .style('text-align', 'center')
     .style('margin-bottom', '10px')
     .text(titleText);
 
-  d3.select('#donutchart')
+  container
     .append('div')
     .style('text-align', 'center')
     .style('margin-bottom', '5px')
@@ -73,12 +74,12 @@ function createDonutChart() {
     .text(`Total: ${totalCalories.toFixed(0)} calories`);
 
   // Cria SVG
-  const svg = d3.select('#donutchart')
+  const svg = container
     .append('svg')
     .attr('width', width)
     .attr('height', height)
-    .style('margin-left', '20px')
-    .style('margin-top', '-20px');
+    .style('margin-left', '10px')
+    .style('margin-top', '-10px');
 
   const g = svg.append('g')
     .attr('transform', `translate(${width / 2}, ${height / 2})`);

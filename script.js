@@ -47,9 +47,10 @@ async function loadData() {
     // Inicializa a visualização após carregar todos os dados
     populateFilters();        // Popula dropdowns e listas de países
     setCurrentData();         // Filtra dados baseado nas seleções iniciais
-    createScatterplot();      // Cria Scatterplot
-    createDonutChart();       // Cria Donut Plot
+    createScatterplot('.ScatterPlot');      // Cria Scatterplot
+    createDonutChart('.DonutChart');        // Cria Donut Plot
     createYearRangeSlider();  // Cria slider D3 de anos
+    setupEventListeners();    // Configura event listeners
 
   } catch (error) {
     console.error('Error loading data:', error);
@@ -197,14 +198,17 @@ function setCurrentData() {
 }
 
 
-// Event listeners - configurados quando o DOM está carregado
-document.addEventListener('DOMContentLoaded', function() {
+function init() {
+  loadData();
+}
+
+// Configura event listeners após carregamento dos dados
+function setupEventListeners() {
   // Listener para mudança no tipo de dados do scatter plot
   d3.select('#dataSelect').on('change', function() {
     setCurrentData();        // Refiltra dados com novo tipo
-    createScatterplot();     // Redesenha scatter plot
+    createScatterplot('.ScatterPlot');     // Redesenha scatter plot
   });
-
 
   // Funcionalidade de busca de países
   d3.select('#countrySearch').on('input', function() {
@@ -230,8 +234,8 @@ document.addEventListener('DOMContentLoaded', function() {
     d3.selectAll('#countryCheckboxes input[type="checkbox"]')
       .property('checked', true);
     setCurrentData();
-    createScatterplot();
-    createDonutChart();
+    createScatterplot('.ScatterPlot');
+    createDonutChart('.DonutChart');
   });
 
   d3.select('#clearAllCountries').on('click', function() {
@@ -239,11 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d3.selectAll('#countryCheckboxes input[type="checkbox"]')
       .property('checked', false);
     setCurrentData();
-    createScatterplot();
-    createDonutChart();
+    createScatterplot('.ScatterPlot');
+    createDonutChart('.DonutChart');
   });
-
-  // Carrega dados e inicializa toda a aplicação
-  loadData();
-
-});
+}

@@ -1,330 +1,92 @@
 body {
-  font-family: 'Arial', sans-serif;
+  font-family: sans-serif;
   margin: 0;
-  padding: 20px; /* Espaçamento ao redor da página */
-  background-color: #f5f5f5; 
+  padding: 5px;
+  height: 100vh;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-/* Container principal que centraliza todo o conteúdo */
 .container {
-  max-width: 1200px; /* Largura máxima */
-  margin: 0 auto; /* Centraliza horizontalmente */
-  background-color: white;
-  padding: 30px; /* Espaçamento interno */
-  border-radius: 10px; /* Cantos arredondados */
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Sombra sutil */
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-template-columns: 1.5fr 1.5fr 1fr;
+  grid-template-rows: auto 1.5fr 1fr;
+  gap: 5px;
+  height: calc(100vh - 10px);
+  grid-template-areas:
+    "title title title"
+    "Map Map Controls"
+    "ScatterPlot LineChart DonutChart";
 }
 
-/* Título principal da aplicação */
-h1 {
+.VisualizationTitle {
+  grid-area: title;
+  margin: 0 0 5px 0;
   text-align: center;
-  color: #333;
-  margin-bottom: 30px;
-  font-size: 2.5em; /* Tamanho da fonte */
 }
 
-/* Seção superior */
-.top-section {
-  display: flex; /* Layout horizontal */
-  gap: 20px; /* Espaço entre mapa e controles */
-  margin-bottom: 20px;
-  height: 55vh; /* 55% da altura da janela */
+.Map {
+  grid-area: Map;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  padding: 10px;
 }
 
-/* Container do mapa (placeholder) */
-.map-container {
-  flex: 3; /* Ocupa 3 partes do espaço (mapa 3x maior que controles) */
-  min-height: 100%;
+.Controls {
+  grid-area: Controls;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  padding: 10px;
 }
 
-/* Painel lateral de controles */
-.controls-panel {
-  flex: 1; /* Ocupa 1 parte do espaço */
-  background-color: #f8f9fa; 
-  border-radius: 8px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column; /* Controles em coluna vertical */
-  gap: 20px; /* Espaço entre cada grupo de controles */
-  overflow-y: auto; /* Scroll vertical se necessário */
+.ScatterPlot {
+  grid-area: ScatterPlot;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  padding: 5px;
 }
 
-/* Grupo de controles individuais dentro do painel */
+.LineChart {
+  grid-area: LineChart;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  padding: 10px;
+}
+
+.DonutChart {
+  grid-area: DonutChart;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  padding: 5px;
+}
+
 .control-group {
   display: flex;
-  flex-direction: column; /* Label acima do controle */
-  gap: 8px; /* Espaço entre label e controle */
-}
-
-/* Estilo dos rótulos dos controles */
-.control-group label {
-  font-weight: bold;
-  color: #333;
-  font-size: 14px; 
-}
-
-/* Estilo dos dropdowns/select */
-.control-group select {
-  padding: 8px 12px; /* Espaçamento interno do select */
-  border: 2px solid #ddd; 
-  border-radius: 5px; /* Cantos arredondados */
-  font-size: 14px;
-  background-color: white;
-}
-
-
-/* Seção inferior: Layout dos gráficos principais */
-.bottom-section {
-  display: flex; /* Layout horizontal dos gráficos */
-  gap: 20px; /* Espaço entre os gráficos */
-  height: 35vh; /* 35% da altura da janela */
-}
-
-/* Placeholders para gráficos não implementados */
-.chart-placeholder {
-  border: 2px dashed #ddd; /* Borda tracejada para indicar placeholder */
-  border-radius: 8px;
-  background-color: #fafafa; 
-  display: flex;
   flex-direction: column;
-  align-items: center; /* Centraliza horizontalmente */
-  justify-content: center; /* Centraliza verticalmente */
-  text-align: center;
-  color: #666; 
-  padding: 20px;
-  flex: 1; /* Ocupa espaço disponível */
+  gap: 15px;
 }
 
-/* Container para gráficos implementados */
-.chart-container {
-  border: 2px solid #007bff; /* Borda sólida azul para gráficos ativos */
-  border-radius: 8px;
-  background-color: white;
-  padding: 5px; /* Espaçamento interno reduzido */
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-/* Tamanhos específicos para cada gráfico na seção inferior */
-.scatter-plot-container {
-  flex: 2; /* Scatter plot 2x mais largo que os outros (alterar para maior/menor) */
-}
-
-.line-chart-placeholder {
-  flex: 1.2; /* Ligeiramente maior que o donut chart */
-}
-
-.donut-chart-placeholder {
-  flex: 0.8; /* Menor que os outros */
-}
-
-/* Estilos dos títulos dos gráficos */
-.chart-container h4,
-.chart-placeholder h4 {
-  margin: 0 0 5px 0; /* Margem reduzida para economizar espaço */
-  font-size: 14px; /* Tamanho da fonte reduzido */
-  color: #333;
-  text-align: center;
-}
-
-/* Seleção de países no painel de controles */
-.country-selection .country-multiselect {
-  max-width: none; /* Remove limitação de largura */
-}
-
-.country-selection .checkbox-list {
-  max-height: 150px; /* Altura máxima da lista */
-}
-
-/* Seção de filtros genérica */
-.filter-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 200px; /* Largura mínima */
-}
-
-/* Labels das seções de filtro */
-.filter-section label {
-  font-weight: bold;
-  margin-bottom: 5px;
-  color: #555;
-}
-
-/* Selects dentro das seções de filtro */
-.filter-section select {
-  padding: 8px 12px;
-  border: 2px solid #ddd;
-  border-radius: 5px;
-  font-size: 14px;
-  background-color: white;
-  cursor: pointer;
-  transition: border-color 0.3s ease; /* Animação suave na mudança de cor */
-}
-
-/* Selects de seleção múltipla */
-.filter-section select[multiple] {
-  min-width: 200px;
-  max-height: 200px; /* Altura máxima para selects múltiplos */
-}
-
-/* Container da seleção múltipla de países */
-.country-multiselect {
-  min-width: 300px; /* Largura mínima para comportar nomes de países */
-}
-
-/* Container das checkboxes de países */
-.checkbox-container {
-  border: 2px solid #ddd;
-  border-radius: 5px;
-  background-color: white;
-  margin-top: 5px;
-}
-
-/* Controles de seleção (botões Select All / Clear All) */
-.checkbox-controls {
-  padding: 10px;
-  border-bottom: 1px solid #eee; /* Linha separadora */
-  display: flex;
-  gap: 10px; /* Espaço entre botões */
-  background-color: #f8f9fa; 
-}
-
-/* Botões de controle (Select All / Clear All) */
-.checkbox-controls button {
-  padding: 5px 10px; /* Espaçamento interno dos botões */
-  font-size: 12px;
-  border: 1px solid #ddd;
-  border-radius: 3px;
-  background-color: white;
-  cursor: pointer;
-  transition: background-color 0.3s ease; /* Animação no hover */
-}
-
-/* Efeito hover nos botões de controle */
-.checkbox-controls button:hover {
-  background-color: #e9ecef; 
-}
-
-/* Lista de checkboxes dos países */
 .checkbox-list {
-  max-height: 200px; /* Altura máxima antes de mostrar scroll */
-  overflow-y: auto; /* Scroll vertical quando necessário */
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
   padding: 10px;
 }
 
-/* Cada item individual de país (checkbox + label) */
-.country-checkbox {
-  display: flex;
-  align-items: center; /* Alinha checkbox e texto verticalmente */
-  margin-bottom: 8px; /* Espaço entre países */
-  padding: 2px 0;
-}
-
-/* Estilo das checkboxes dos países */
-.country-checkbox input[type="checkbox"] {
-  margin-right: 8px; /* Espaço entre checkbox e nome do país */
-  cursor: pointer;
-}
-
-/* Labels dos nomes dos países */
-.country-checkbox label {
-  cursor: pointer; /* Cursor de clique em todo o label */
-  font-size: 14px;
-  color: #333;
-  flex-grow: 1; /* Ocupa todo o espaço restante */
-}
-
-/* Efeito hover nos itens de país */
-.country-checkbox:hover {
-  background-color: #f8f9fa; 
-  padding: 2px 5px;
-  border-radius: 3px;
-}
-
-/* Campo de busca de países */
-#countrySearch {
-  width: 100%;
-  padding: 8px 12px;
-  border: 2px solid #ddd;
-  border-radius: 5px;
-  font-size: 14px;
-  background-color: white;
-}
-
-/* Estados interativos dos selects */
-.filter-section select:hover {
-  border-color: #007bff; 
-}
-
-.filter-section select:focus {
-  outline: none; /* Remove outline padrão do navegador */
-  border-color: #007bff; 
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3); 
-}
-
-/* Container do Scatterplot */
-#scatterplot {
-  flex-grow: 1; /* Cresce para ocupar espaço disponível */
-  display: flex;
-  justify-content: center; /* Centraliza horizontalmente */
-  align-items: center; /* Centraliza verticalmente */
-  width: 100%;
-  height: 100%;
-  overflow: visible; /* Permite elementos fora dos limites */
-  margin-left: 10px; /* Move o gráfico para a direita */
-}
-
-/* Estilos dos eixos do Scatterplot */
-.axis text {
-  font-size: 12px; 
-  color: #666; 
-}
-
-/* Labels dos eixos (títulos X e Y) */
-.axis-label {
-  font-size: 14px; /* Tamanho da fonte dos títulos dos eixos */
-  font-weight: bold;
-  color: #333; 
-}
-
-/* Tooltip que aparece ao passar o mouse nos pontos */
 .tooltip {
-  position: absolute; /* Posicionamento absoluto para seguir o mouse */
-  background-color: rgba(0, 0, 0, 0.8); 
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.8);
   color: white;
   padding: 10px;
-  border-radius: 10px; /* Cantos bem arredondados */
+  border-radius: 5px;
   font-size: 12px;
-  pointer-events: none; /* Não interfere com cliques */
-  opacity: 0; /* Invisível por padrão */
-  transition: opacity 0.3s ease; /* Animação suave de entrada/saída */
+  pointer-events: none;
+  opacity: 0;
 }
 
-/* Linha de regressão linear */
 .regression-line {
-  stroke: #ff6b6b; 
-  stroke-width: 2; 
-  fill: none; 
-}
-
-/* Texto com informação da regressão (R²) */
-.regression-info {
-  font-size: 12px;
-  fill: #ff6b6b;
-  font-weight: bold;
-}
-
-/* Estilos dos círculos (pontos) no scatter plot */
-.circle {
-  stroke: #fff; 
-  stroke-width: 1.5; 
-  transition: all 0.3s ease; /* Animação suave nas mudanças */
-}
-
-/* Efeito hover nos pontos do scatter plot */
-.circle:hover {
-  stroke-width: 3; /* Borda mais grossa no hover */
-  cursor: pointer; /* Cursor de clique */
+  stroke: #ff6b6b;
+  stroke-width: 2;
+  fill: none;
 }

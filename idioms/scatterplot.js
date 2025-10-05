@@ -1,10 +1,11 @@
-function createScatterplot() {
+function createScatterplot(selector = '#scatterplot') {
   // Limpa o gráfico anterior para evitar sobreposições
-  d3.select('#scatterplot').selectAll('*').remove();
+  const container = selector.startsWith('.') ? d3.select(selector).select('#scatterplot') : d3.select(selector);
+  container.selectAll('*').remove();
 
   // Verifica se há dados para mostrar com os filtros atuais
   if (currentData.length === 0) {
-    d3.select('#scatterplot')
+    container
       .append('div')
       .style('text-align', 'center')
       .style('padding', '50px')
@@ -17,12 +18,12 @@ function createScatterplot() {
   const config = getChartConfig();
 
   // Cria elemento SVG principal
-  // margin-top negativo move o gráfico para cima no container
-  const svg = d3.select('#scatterplot')
+  const svg = container
     .append('svg')
     .attr('width', config.width)
     .attr('height', config.height)
-    .style('margin-top', '-20px'); // Alterar para mover para cima
+    .style('margin-down', '5px')
+    .style('margin-left', '30px');
 
   // Cria escalas - limita escala do PIB para máximo $160,000
   const isGdpOnX = currentData[0]?.xLabel?.includes('GDP');
