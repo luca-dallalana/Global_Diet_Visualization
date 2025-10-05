@@ -124,15 +124,17 @@ function createLineChart(selector = '#linechart') {
   // Desenha linhas para cada país
   dataByCountry.forEach((countryData, country) => {
     const sortedData = countryData.sort((a, b) => a.year - b.year);
+    const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(country);
 
+    // Linha com destaque para países selecionados no choropleth
     svg.append('path')
       .datum(sortedData)
       .attr('fill', 'none')
-      .attr('stroke', colorScale(country))
-      .attr('stroke-width', 2)
+      .attr('stroke', isChoroplethSelected ? d3.color(colorScale(country)).brighter(0.5) : colorScale(country))
+      .attr('stroke-width', isChoroplethSelected ? 4 : 2)
       .attr('d', line);
 
-    // Adiciona pontos
+    // Adiciona pontos com destaque
     svg.selectAll(`.point-${country.replace(/\s+/g, '-')}`)
       .data(sortedData)
       .enter()
@@ -140,10 +142,12 @@ function createLineChart(selector = '#linechart') {
       .attr('class', `point-${country.replace(/\s+/g, '-')}`)
       .attr('cx', d => xScale(d.year))
       .attr('cy', d => yScale(d.value))
-      .attr('r', 3)
-      .attr('fill', colorScale(country))
+      .attr('r', isChoroplethSelected ? 4 : 3)
+      .attr('fill', isChoroplethSelected ? d3.color(colorScale(country)).brighter(0.5) : colorScale(country))
+      .attr('stroke', isChoroplethSelected ? '#000' : 'none')
+      .attr('stroke-width', isChoroplethSelected ? 2 : 0)
       .on('mouseover', function(event, d) {
-        d3.select(this).attr('r', 5);
+        d3.select(this).attr('r', isChoroplethSelected ? 6 : 5);
         tooltip
           .style('opacity', 1)
           .html(`
@@ -155,7 +159,7 @@ function createLineChart(selector = '#linechart') {
           .style('top', (event.pageY - 10) + 'px');
       })
       .on('mouseout', function() {
-        d3.select(this).attr('r', 3);
+        d3.select(this).attr('r', isChoroplethSelected ? 4 : 3);
         tooltip.style('opacity', 0);
       });
   });

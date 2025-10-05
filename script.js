@@ -117,11 +117,24 @@ function populateCountryCheckboxes(countries, preserveSelections = false) {
       return defaultCountries.includes(d); // Usa seleção padrão
     })
     .on('change', function() {
+      // Verifica se um país foi desmarcado e remove da seleção do choropleth
+      const countryName = this.value;
+      const isChecked = this.checked;
+
+      if (!isChecked && window.choroplethSelectedCountries) {
+        // Remove o país da lista de seleção do choropleth se foi desmarcado
+        window.choroplethSelectedCountries = window.choroplethSelectedCountries.filter(c => c !== countryName);
+      }
+
       // Atualiza gráficos quando país é selecionado/desselecionado
       setCurrentData();
       createScatterplot();
       createDonutChart();
       createLineChart();
+      // Atualiza visuais do mapa
+      if (window.updateMapSelection) {
+        window.updateMapSelection();
+      }
     });
 
   // Adiciona label clicável para cada país
@@ -250,15 +263,29 @@ function setupEventListeners() {
     createScatterplot('.ScatterPlot');
     createDonutChart('.DonutChart');
     createLineChart('.LineChart');
+    // Atualiza visuais do mapa
+    if (window.updateMapSelection) {
+      window.updateMapSelection();
+    }
   });
 
   d3.select('#clearAllCountries').on('click', function() {
     // Desseleciona todos os países
     d3.selectAll('#countryCheckboxes input[type="checkbox"]')
       .property('checked', false);
+
+    // Limpa também a seleção do choropleth
+    if (window.choroplethSelectedCountries) {
+      window.choroplethSelectedCountries = [];
+    }
+
     setCurrentData();
     createScatterplot('.ScatterPlot');
     createDonutChart('.DonutChart');
     createLineChart('.LineChart');
+    // Atualiza visuais do mapa
+    if (window.updateMapSelection) {
+      window.updateMapSelection();
+    }
   });
 }

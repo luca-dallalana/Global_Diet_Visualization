@@ -1,3 +1,10 @@
+// Lista global de países selecionados no choropleth (máximo 10)
+window.choroplethSelectedCountries = window.choroplethSelectedCountries || [];
+
+// Mapa global de nomes de países para usar em funções externas
+let globalCountryNameMap = {};
+let globalSvg = null;
+
 function createChoropleth(selector = '.Map') {
   // Limpa o mapa anterior
   const container = d3.select(selector);
@@ -13,6 +20,8 @@ function createChoropleth(selector = '.Map') {
   const width = containerRect.width || 800;  // Fallback se não conseguir obter largura
   const height = containerRect.height || 500; // Fallback se não conseguir obter altura
 
+  console.log('Container dimensions:', width, 'x', height);
+
   // Cria SVG que preenche todo o container
   const svg = container
     .append('svg')
@@ -21,6 +30,9 @@ function createChoropleth(selector = '.Map') {
     .attr('viewBox', `0 0 ${width} ${height}`)
     .attr('preserveAspectRatio', 'xMidYMid meet')
     .style('background-color', '#f0f8ff');
+
+  // Armazena referência global do SVG
+  globalSvg = svg;
 
   // Projeção do mapa - será ajustada depois de carregar os dados
   const projection = d3.geoNaturalEarth1();
@@ -92,12 +104,9 @@ function createChoropleth(selector = '.Map') {
 
     // Ajusta a projeção para preencher todo o container
     projection.fitSize([width, height], countries);
-
-    // Debug: Log available data countries and TopoJSON properties
-    console.log('Available countries in data:', [...new Set(mapData.map(d => d.country))].sort());
-    console.log('Sample TopoJSON properties:', countries.features.slice(0, 5).map(d => d.properties));
-    console.log('Current year:', currentYear);
-    console.log('Map data length:', mapData.length);
+    console.log('Projection fitted to:', width, 'x', height);
+    console.log('Projection scale:', projection.scale());
+    console.log('Projection translate:', projection.translate());
 
     // Mapeamento de nomes de países (TopoJSON para nomes em nossos dados)
     const countryNameMap = {
@@ -137,6 +146,9 @@ function createChoropleth(selector = '.Map') {
       'W. Sahara': 'Western Sahara'
     };
 
+    // Armazena o mapeamento globalmente
+    globalCountryNameMap = countryNameMap;
+
     // Desenha todos os países
     svg.selectAll('.country')
       .data(countries.features)
@@ -147,12 +159,6 @@ function createChoropleth(selector = '.Map') {
       .attr('fill', function(d) {
         const countryName = countryNameMap[d.properties.name] || d.properties.name;
         const countryValue = dataByCountry.get(countryName);
-
-        // Debug: Log first few country mappings
-        if (countries.features.indexOf(d) < 5) {
-          console.log(`Country: ${d.properties.name} -> ${countryName}, Value: ${countryValue}`);
-        }
-
         return countryValue ? colorScale(countryValue) : '#ccc';
       })
       .attr('stroke', '#333')
@@ -177,10 +183,50 @@ function createChoropleth(selector = '.Map') {
         tooltip.style('opacity', 0);
       })
       .on('click', function(event, d) {
+        console.log('Country clicked:', d.properties.name);
         const countryName = countryNameMap[d.properties.name] || d.properties.name;
-        // Verifica se o país tem dados antes de tentar atualizá-lo
-        if (dataByCountry.has(countryName)) {
-          updateLineChartForCountry(countryName);
+        console.log('Mapped country name:', countryName);
+
+        // Verifica se o país existe nos dados
+        const allCountries = [...new Set([
+          ...caloriesGdpData.map(d => d.country),
+          ...obesityData.map(d => d.country),
+          ...macronutrientData.map(d => d.country)
+        ])];
+        const countryExists = allCountries.includes(countryName);
+        console.log('Country exists in data:', countryExists);
+        console.log('Current choropleth selection:', window.choroplethSelectedCountries);
+
+        if (countryExists) {
+          // Toggle da seleção no choropleth (separado dos checkboxes)
+          const isCurrentlySelected = window.choroplethSelectedCountries.includes(countryName);
+          console.log('Currently selected:', isCurrentlySelected);
+
+          if (isCurrentlySelected) {
+            // Remove da seleção
+            window.choroplethSelectedCountries = window.choroplethSelectedCountries.filter(c => c !== countryName);
+            console.log('Removed from selection. New list:', window.choroplethSelectedCountries);
+          } else {
+            // Adiciona à seleção (máximo 10)
+            if (window.choroplethSelectedCountries.length < 10) {
+              window.choroplethSelectedCountries.push(countryName);
+              console.log('Added to selection. New list:', window.choroplethSelectedCountries);
+            } else {
+              // Remove o primeiro e adiciona o novo (FIFO)
+              window.choroplethSelectedCountries.shift();
+              window.choroplethSelectedCountries.push(countryName);
+              console.log('FIFO replacement. New list:', window.choroplethSelectedCountries);
+            }
+          }
+
+          // Atualiza visuais do mapa
+          updateAllCountryVisuals();
+
+          // Atualiza os gráficos para destacar países selecionados no choropleth
+          createScatterplot('.ScatterPlot');
+          createLineChart('.LineChart');
+        } else {
+          console.log('Country not found in data. Available countries:', allCountries.slice(0, 10));
         }
       });
   }).catch(function(error) {
@@ -189,51 +235,48 @@ function createChoropleth(selector = '.Map') {
     drawExampleCountries();
   });
 
-  // Função de fallback para países de exemplo
-  function drawExampleCountries() {
-    const exampleCountries = [
-      { name: "United States", coordinates: [[-120, 40], [-120, 50], [-70, 50], [-70, 40], [-120, 40]] },
-      { name: "Brazil", coordinates: [[-70, -30], [-70, 10], [-35, 10], [-35, -30], [-70, -30]] },
-      { name: "Germany", coordinates: [[5, 47], [5, 55], [15, 55], [15, 47], [5, 47]] },
-      { name: "Portugal", coordinates: [[-10, 37], [-10, 42], [-6, 42], [-6, 37], [-10, 37]] },
-      { name: "Spain", coordinates: [[-10, 36], [-10, 44], [4, 44], [4, 36], [-10, 36]] },
-    ];
+  // Função para atualizar visual do país baseado nos dois tipos de seleção
+  function updateCountryVisual(countryElement, countryName) {
+    const isCheckboxSelected = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
+      .map(checkbox => checkbox.value).includes(countryName);
+    const isChoroplethSelected = window.choroplethSelectedCountries.includes(countryName);
 
-    exampleCountries.forEach(country => {
-      const countryValue = dataByCountry.get(country.name);
-      const fillColor = countryValue ? colorScale(countryValue) : '#ccc';
-
-      svg.append('path')
-        .datum({
-          type: 'Polygon',
-          coordinates: [country.coordinates]
-        })
-        .attr('d', path)
-        .attr('fill', fillColor)
+    if (isChoroplethSelected) {
+      // Choropleth selection: dark black thick outline
+      countryElement
+        .attr('stroke', '#000')
+        .attr('stroke-width', 4)
+        .style('stroke-dasharray', 'none');
+    } else if (isCheckboxSelected) {
+      // Checkbox selection: orange dashed outline
+      countryElement
+        .attr('stroke', '#ff6600')
+        .attr('stroke-width', 2)
+        .style('stroke-dasharray', '5,5');
+    } else {
+      // No selection: default gray outline
+      countryElement
         .attr('stroke', '#333')
         .attr('stroke-width', 0.5)
-        .style('cursor', 'pointer')
-        .on('mouseover', function(event, d) {
-          d3.select(this).attr('stroke-width', 2);
-          const value = countryValue || 'No data';
-          tooltip
-            .style('opacity', 1)
-            .html(`
-              <strong>${country.name}</strong><br/>
-              ${legendTitle}: ${typeof value === 'number' ? value.toFixed(selectedFilter === 'obesity-rate' ? 1 : 0) : value}${selectedFilter === 'obesity-rate' && typeof value === 'number' ? '%' : ''}
-            `)
-            .style('left', (event.pageX + 10) + 'px')
-            .style('top', (event.pageY - 10) + 'px');
-        })
-        .on('mouseout', function() {
-          d3.select(this).attr('stroke-width', 0.5);
-          tooltip.style('opacity', 0);
-        })
-        .on('click', function() {
-          updateLineChartForCountry(country.name);
-        });
-    });
+        .style('stroke-dasharray', 'none');
+    }
   }
+
+  // Função para atualizar todos os países baseado nas duas listas de seleção
+  function updateAllCountryVisuals() {
+    if (globalSvg && globalCountryNameMap) {
+      globalSvg.selectAll('.country').each(function(d) {
+        const countryName = globalCountryNameMap[d.properties.name] || d.properties.name;
+        updateCountryVisual(d3.select(this), countryName);
+      });
+    }
+  }
+
+  // Exporta função para uso externo
+  window.updateMapSelection = updateAllCountryVisuals;
+
+  // Atualiza visuais iniciais baseado nos países já selecionados
+  setTimeout(updateAllCountryVisuals, 100); // Pequeno delay para garantir que os checkboxes estejam prontos
 
   // Adiciona legenda - posicionada no canto inferior direito
   const legendWidth = Math.min(200, width * 0.25);  // Máximo 25% da largura

@@ -50,18 +50,37 @@ function createScatterplot(selector = '#scatterplot') {
     .append('div')
     .attr('class', 'tooltip');
 
-  // Desenha círculos para cada ponto de dados
+  // Desenha círculos para cada ponto de dados com destaque para países selecionados no choropleth
   svg.selectAll('.circle')
     .data(currentData)
     .enter()
     .append('circle')
     .attr('class', 'circle')
-    .attr('cx', d => xScale(d.x)) 
+    .attr('cx', d => xScale(d.x))
     .attr('cy', d => yScale(d.y))
-    .attr('r', 5) 
-    .attr('fill', pointColor) 
+    .attr('r', d => {
+      const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(d.country);
+      return isChoroplethSelected ? 7 : 5;
+    })
+    .attr('fill', d => {
+      const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(d.country);
+      return isChoroplethSelected ? '#ff4444' : pointColor;
+    })
+    .attr('stroke', d => {
+      const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(d.country);
+      return isChoroplethSelected ? '#000' : 'none';
+    })
+    .attr('stroke-width', d => {
+      const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(d.country);
+      return isChoroplethSelected ? 2 : 0;
+    })
+    .style('opacity', d => {
+      const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(d.country);
+      return isChoroplethSelected ? 1 : 0.8;
+    })
     .on('mouseover', function(event, d) {
-      d3.select(this).attr('r', 7);
+      const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(d.country);
+      d3.select(this).attr('r', isChoroplethSelected ? 9 : 7);
       tooltip
         .style('opacity', 1)
         .html(`
@@ -73,8 +92,9 @@ function createScatterplot(selector = '#scatterplot') {
         .style('left', (event.pageX + 10) + 'px')
         .style('top', (event.pageY - 10) + 'px');
     })
-    .on('mouseout', function() {
-      d3.select(this).attr('r', 5);
+    .on('mouseout', function(event, d) {
+      const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(d.country);
+      d3.select(this).attr('r', isChoroplethSelected ? 7 : 5);
       tooltip.style('opacity', 0);
     });
 
