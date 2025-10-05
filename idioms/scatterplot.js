@@ -23,7 +23,7 @@ function createScatterplot(selector = '#scatterplot') {
     .attr('width', config.width)
     .attr('height', config.height)
     .style('margin-down', '5px')
-    .style('margin-left', '30px');
+    .style('margin-left', '40px');
 
   // Cria escalas - limita escala do PIB para máximo $160,000
   const isGdpOnX = currentData[0]?.xLabel?.includes('GDP');
@@ -149,7 +149,7 @@ function createScatterplot(selector = '#scatterplot') {
     .attr('class', 'axis-label')
     .attr('transform', 'rotate(-90)')
     .attr('x', -config.height / 2)
-    .attr('y', 10)
+    .attr('y', 12)
     .attr('text-anchor', 'middle')
     .text(currentData[0]?.yLabel || 'Y Axis');
 }
