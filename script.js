@@ -47,6 +47,7 @@ async function loadData() {
     // Inicializa a visualização após carregar todos os dados
     populateFilters();        // Popula dropdowns e listas de países
     setCurrentData();         // Filtra dados baseado nas seleções iniciais
+    createChoropleth('.Map'); // Cria mapa coroplético
     createScatterplot('.ScatterPlot');      // Cria Scatterplot
     createDonutChart('.DonutChart');        // Cria Donut Plot
     createLineChart('.LineChart');          // Cria Line Chart
@@ -214,6 +215,11 @@ function setupEventListeners() {
 
   // Listener para mudança no filtro do line chart
   d3.select('#filterSelect').on('change', function() {
+    // Atualiza o slider para o novo filtro (restrições de ano)
+    if (window.updateSliderForFilter) {
+      window.updateSliderForFilter();
+    }
+    createChoropleth('.Map');          // Redesenha mapa com novo filtro
     createLineChart('.LineChart');     // Redesenha line chart com novo filtro
   });
 

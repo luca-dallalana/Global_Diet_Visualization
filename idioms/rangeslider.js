@@ -10,12 +10,22 @@ function createYearRangeSlider() {
   const sliderWidth = width - margin.left - margin.right;
   const sliderHeight = height - margin.top - margin.bottom;
 
-  // Intervalo de anos disponíveis no dataset
-  const minYear = 1961;
-  const maxYear = 2022;
+  // Função para obter intervalo de anos baseado no filtro selecionado
+  function getYearRange() {
+    const selectedFilter = d3.select('#filterSelect').property('value');
+    if (selectedFilter === 'obesity-rate') {
+      return { min: 1990, max: 2022 }; // Dados de obesidade começam em 1990
+    }
+    return { min: 1961, max: 2022 }; // Outros dados começam em 1961
+  }
+
+  // Intervalo de anos disponíveis baseado no filtro
+  const yearRange = getYearRange();
+  let minYear = yearRange.min;
+  let maxYear = yearRange.max;
   let startYear = minYear;
   let endYear = maxYear;
-  let currentYear = 2022; 
+  let currentYear = maxYear; 
 
   // Escala linear que mapeia anos para posições no slider
   // domain() define o intervalo de dados (anos), range() as posições em pixels
@@ -201,9 +211,76 @@ function createYearRangeSlider() {
 
   function updateVisualization() {
     setCurrentData();
+    createChoropleth();
     createScatterplot();
     createDonutChart();
     createLineChart();
+  }
+
+  // Função para atualizar o slider quando o filtro muda
+  function updateSliderForFilter() {
+    const newYearRange = getYearRange();
+    const newMinYear = newYearRange.min;
+    const newMaxYear = newYearRange.max;
+
+    // Atualiza as variáveis globais
+    minYear = newMinYear;
+    maxYear = newMaxYear;
+
+    // Ajusta startYear e endYear se estiverem fora do novo intervalo
+    if (startYear < newMinYear) startYear = newMinYear;
+    if (endYear > newMaxYear) endYear = newMaxYear;
+    if (currentYear < newMinYear) currentYear = newMinYear;
+    if (currentYear > newMaxYear) currentYear = newMaxYear;
+
+    // Atualiza a escala
+    xScale.domain([newMinYear, newMaxYear]);
+
+    // Reposiciona elementos do slider
+    d3.selectAll('.handle')
+      .attr('x', d => xScale(d.type === 'start' ? startYear : endYear) - 8);
+
+    currentYearCircle.attr('cx', xScale(currentYear));
+
+    // Atualiza a trilha de destaque
+    range
+      .attr('x', xScale(startYear))
+      .attr('width', xScale(endYear) - xScale(startYear));
+
+    // Atualiza marcas e rótulos
+    const newTickYears = d3.range(newMinYear, newMaxYear + 1, 10);
+
+    // Remove marcas antigas
+    g.selectAll('.tick').remove();
+    g.selectAll('.tick-label').remove();
+
+    // Adiciona novas marcas
+    g.selectAll('.tick')
+      .data(newTickYears)
+      .enter()
+      .append('line')
+      .attr('class', 'tick')
+      .attr('x1', d => xScale(d))
+      .attr('x2', d => xScale(d))
+      .attr('y1', sliderHeight / 2 + 6)
+      .attr('y2', sliderHeight / 2 + 12)
+      .attr('stroke', '#666')
+      .attr('stroke-width', 1);
+
+    // Adiciona novos rótulos
+    g.selectAll('.tick-label')
+      .data(newTickYears)
+      .enter()
+      .append('text')
+      .attr('class', 'tick-label')
+      .attr('x', d => xScale(d))
+      .attr('y', sliderHeight / 2 + 25)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '10px')
+      .attr('fill', '#666')
+      .text(d => d);
+
+    updateSlider();
   }
 
   // Funções exportadas para uso por outros componentes
@@ -214,4 +291,6 @@ function createYearRangeSlider() {
   window.getCurrentYear = function() {
     return currentYear;
   };
+
+  window.updateSliderForFilter = updateSliderForFilter;
 }

@@ -6,10 +6,12 @@
     <title>Global Dietary Behaviour Visualization</title>
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="./libs/topojson.min.js"></script>
     <script src="./script.js"></script>
     <script src="./idioms/scatterplot.js"></script>
     <script src="./idioms/donutchart.js"></script>
     <script src="./idioms/linechart.js"></script>
+    <script src="./idioms/choropleth.js"></script>
     <script src="./idioms/rangeslider.js"></script>
   </head>
   <body onload="init()">
@@ -17,8 +19,6 @@
       <VisualizationTitle>Global Dietary Behaviour</VisualizationTitle>
 
       <div class="Map">
-        <h3>World Choropleth Map</h3>
-        <p>Geographic visualization of nutritional data</p>
       </div>
 
       <div class="Controls">
