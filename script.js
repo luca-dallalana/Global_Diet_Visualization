@@ -61,14 +61,6 @@ async function loadData() {
 
 // Popula dropdowns e listas de filtros com dados únicos dos datasets
 function populateFilters() {
-  // Extrai anos únicos de todos os datasets e ordena
-  const allYears = [...new Set([
-    ...caloriesGdpData.map(d => d.year),
-    ...obesityData.map(d => d.year),
-    ...macronutrientData.map(d => d.year)
-  ])].sort();
-
-
   // Extrai países únicos de todos os datasets e ordena alfabeticamente
   const allCountries = [...new Set([
     ...caloriesGdpData.map(d => d.country),
