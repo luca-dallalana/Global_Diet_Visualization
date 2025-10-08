@@ -1,10 +1,82 @@
+// Função para preparar dados do scatterplot baseado no tipo selecionado
+function prepareScatterplotData() {
+  const dataType = d3.select('#dataSelect').property('value');
+  const currentYear = window.getCurrentYear ? window.getCurrentYear() : 2022;
+  const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
+    .map(checkbox => checkbox.value);
+
+  let baseData = [];
+
+  // Prepara dados baseado no tipo selecionado no dropdown
+  switch(dataType) {
+    case 'calories-gdp':
+      // PIB per capita vs Calorias diárias
+      baseData = caloriesGdpData.map(d => ({
+        ...d,
+        x: d.gdp,                           // Eixo X = PIB
+        y: d.calories,                      // Eixo Y = Calorias
+        xLabel: 'GDP per Capita ($)',
+        yLabel: 'Daily Calories'
+      }));
+      break;
+    case 'obesity-gdp':
+      // Combina dados de obesidade com PIB
+      baseData = [];
+      obesityData.forEach(obesityRecord => {
+        const gdpRecord = caloriesGdpData.find(gdp =>
+          gdp.country === obesityRecord.country && gdp.year === obesityRecord.year
+        );
+        if (gdpRecord) {
+          baseData.push({
+            country: obesityRecord.country,
+            year: obesityRecord.year,
+            x: gdpRecord.gdp,               // Eixo X = PIB
+            y: obesityRecord.obesity,       // Eixo Y = Taxa de obesidade
+            xLabel: 'GDP per Capita ($)',
+            yLabel: 'Obesity Rate (%)'
+          });
+        }
+      });
+      break;
+    case 'calories-obesity':
+      // Combina dados de calorias com obesidade
+      baseData = [];
+      caloriesGdpData.forEach(caloriesRecord => {
+        const obesityRecord = obesityData.find(obesity =>
+          obesity.country === caloriesRecord.country && obesity.year === caloriesRecord.year
+        );
+        if (obesityRecord) {
+          baseData.push({
+            country: caloriesRecord.country,
+            year: caloriesRecord.year,
+            x: caloriesRecord.calories,     // Eixo X = Calorias
+            y: obesityRecord.obesity,       // Eixo Y = Taxa de obesidade
+            xLabel: 'Daily Calories',
+            yLabel: 'Obesity Rate (%)'
+          });
+        }
+      });
+      break;
+  }
+
+  // Aplica filtros de ano e países selecionados
+  return baseData.filter(d => {
+    const yearMatch = d.year === currentYear;                              // Ano do círculo do slider
+    const countryMatch = selectedCountries.length > 0 && selectedCountries.includes(d.country); // Países selecionados
+    return yearMatch && countryMatch && !isNaN(d.x) && !isNaN(d.y);       // Remove dados inválidos
+  });
+}
+
 function createScatterplot(selector = '#scatterplot') {
   // Limpa o gráfico anterior para evitar sobreposições
   const container = selector.startsWith('.') ? d3.select(selector).select('#scatterplot') : d3.select(selector);
   container.selectAll('*').remove();
 
+  // Prepara dados para o scatterplot
+  const scatterplotData = prepareScatterplotData();
+
   // Verifica se há dados para mostrar com os filtros atuais
-  if (currentData.length === 0) {
+  if (scatterplotData.length === 0) {
     container
       .append('div')
       .style('text-align', 'center')
@@ -26,10 +98,10 @@ function createScatterplot(selector = '#scatterplot') {
     .style('margin-left', '40px');
 
   // Cria escalas - limita escala do PIB para máximo $160,000
-  const isGdpOnX = currentData[0]?.xLabel?.includes('GDP');
+  const isGdpOnX = scatterplotData[0]?.xLabel?.includes('GDP');
   const xDomain = isGdpOnX ?
-    [0, Math.min(160000, d3.max(currentData, d => d.x))] : // Alterar 160000 para mudar limite máximo
-    d3.extent(currentData, d => d.x);
+    [0, Math.min(160000, d3.max(scatterplotData, d => d.x))] : // Alterar 160000 para mudar limite máximo
+    d3.extent(scatterplotData, d => d.x);
 
   // Escala X: mapeia valores dos dados para posições horizontais
   const xScale = d3.scaleLinear()
@@ -39,7 +111,7 @@ function createScatterplot(selector = '#scatterplot') {
 
   // Escala Y: mapeia valores dos dados para posições verticais
   const yScale = d3.scaleLinear()
-    .domain(d3.extent(currentData, d => d.y)) // Min/max dos dados Y
+    .domain(d3.extent(scatterplotData, d => d.y)) // Min/max dos dados Y
     .nice()
     .range([config.height - config.margin.bottom, config.margin.top]); // Invertido (topo = menor valor)
 
@@ -52,7 +124,7 @@ function createScatterplot(selector = '#scatterplot') {
 
   // Desenha círculos para cada ponto de dados com destaque para países selecionados no choropleth
   svg.selectAll('.circle')
-    .data(currentData)
+    .data(scatterplotData)
     .enter()
     .append('circle')
     .attr('class', 'circle')
@@ -99,11 +171,11 @@ function createScatterplot(selector = '#scatterplot') {
     });
 
   // Add regression line
-  const regression = calculateLinearRegression(currentData);
+  const regression = calculateLinearRegression(scatterplotData);
   if (regression) {
     const lineData = [
-      { x: d3.min(currentData, d => d.x), y: regression.slope * d3.min(currentData, d => d.x) + regression.intercept },
-      { x: d3.max(currentData, d => d.x), y: regression.slope * d3.max(currentData, d => d.x) + regression.intercept }
+      { x: d3.min(scatterplotData, d => d.x), y: regression.slope * d3.min(scatterplotData, d => d.x) + regression.intercept },
+      { x: d3.max(scatterplotData, d => d.x), y: regression.slope * d3.max(scatterplotData, d => d.x) + regression.intercept }
     ];
 
     svg.append('path')
@@ -124,7 +196,7 @@ function createScatterplot(selector = '#scatterplot') {
   }
 
   // Create custom tick values and formatters
-  const isGdpOnXAxis = currentData[0]?.xLabel?.includes('GDP');
+  const isGdpOnXAxis = scatterplotData[0]?.xLabel?.includes('GDP');
 
   // X-axis with custom ticks
   let xAxis;
@@ -138,8 +210,8 @@ function createScatterplot(selector = '#scatterplot') {
   }
 
   // Y-axis with custom ticks
-  const yTickValues = d3.range(d3.min(currentData, d => d.y), d3.max(currentData, d => d.y) + 1,
-    (d3.max(currentData, d => d.y) - d3.min(currentData, d => d.y)) / 6);
+  const yTickValues = d3.range(d3.min(scatterplotData, d => d.y), d3.max(scatterplotData, d => d.y) + 1,
+    (d3.max(scatterplotData, d => d.y) - d3.min(scatterplotData, d => d.y)) / 6);
   const yAxis = d3.axisLeft(yScale).tickValues(yTickValues);
 
   svg.append('g')
@@ -153,7 +225,7 @@ function createScatterplot(selector = '#scatterplot') {
     .call(yAxis);
 
   // Add axis labels with thousands notation
-  let xLabel = currentData[0]?.xLabel;
+  let xLabel = scatterplotData[0]?.xLabel;
   if (isGdpOnXAxis) {
     xLabel = xLabel.replace('($)', '(thousands $)');
   }
@@ -171,7 +243,7 @@ function createScatterplot(selector = '#scatterplot') {
     .attr('x', -config.height / 2)
     .attr('y', 12)
     .attr('text-anchor', 'middle')
-    .text(currentData[0]?.yLabel || 'Y Axis');
+    .text(scatterplotData[0]?.yLabel || 'Y Axis');
 }
 
 function calculateLinearRegression(data) {

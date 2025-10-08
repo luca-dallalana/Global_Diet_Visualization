@@ -135,74 +135,11 @@ function populateCountryCheckboxes(countries, preserveSelections = false) {
     .text(d => d);
 }
 
-// Define dados atuais baseado nos filtros selecionados
+// Define dados atuais baseado nos filtros selecionados (agora simplificado)
 function setCurrentData() {
-  const dataType = d3.select('#dataSelect').property('value');
-  // Obtém ano atual do círculo do slider D3 ou usa padrão
-  const currentYear = window.getCurrentYear ? window.getCurrentYear() : 2022;
-  const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
-    .map(checkbox => checkbox.value);
-
-  let baseData;
-
-  // Prepara dados baseado no tipo selecionado no dropdown
-  switch(dataType) {
-    case 'calories-gdp':
-      // PIB per capita vs Calorias diárias
-      baseData = caloriesGdpData.map(d => ({
-        ...d,
-        x: d.gdp,                           // Eixo X = PIB
-        y: d.calories,                      // Eixo Y = Calorias
-        xLabel: 'GDP per Capita ($)',
-        yLabel: 'Daily Calories'
-      }));
-      break;
-    case 'obesity-gdp':
-      // Combina dados de obesidade com PIB
-      baseData = [];
-      obesityData.forEach(obesityRecord => {
-        const gdpRecord = caloriesGdpData.find(gdp =>
-          gdp.country === obesityRecord.country && gdp.year === obesityRecord.year
-        );
-        if (gdpRecord) {
-          baseData.push({
-            country: obesityRecord.country,
-            year: obesityRecord.year,
-            x: gdpRecord.gdp,               // Eixo X = PIB
-            y: obesityRecord.obesity,       // Eixo Y = Taxa de obesidade
-            xLabel: 'GDP per Capita ($)',
-            yLabel: 'Obesity Rate (%)'
-          });
-        }
-      });
-      break;
-    case 'calories-obesity':
-      // Combina dados de calorias com obesidade
-      baseData = [];
-      caloriesGdpData.forEach(caloriesRecord => {
-        const obesityRecord = obesityData.find(obesity =>
-          obesity.country === caloriesRecord.country && obesity.year === caloriesRecord.year
-        );
-        if (obesityRecord) {
-          baseData.push({
-            country: caloriesRecord.country,
-            year: caloriesRecord.year,
-            x: caloriesRecord.calories,     // Eixo X = Calorias
-            y: obesityRecord.obesity,       // Eixo Y = Taxa de obesidade
-            xLabel: 'Daily Calories',
-            yLabel: 'Obesity Rate (%)'
-          });
-        }
-      });
-      break;
-  }
-
-  // Aplica filtros de ano e países selecionados
-  currentData = baseData.filter(d => {
-    const yearMatch = d.year === currentYear;                              // Ano do círculo do slider
-    const countryMatch = selectedCountries.length > 0 && selectedCountries.includes(d.country); // Países selecionados
-    return yearMatch && countryMatch && !isNaN(d.x) && !isNaN(d.y);       // Remove dados inválidos
-  });
+  // Esta função agora é simplificada pois o scatterplot gerencia seus próprios dados
+  // Mantém apenas para compatibilidade com outros componentes que possam usar currentData
+  currentData = [];
 }
 
 
