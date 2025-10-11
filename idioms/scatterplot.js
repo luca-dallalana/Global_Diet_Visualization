@@ -147,7 +147,7 @@ function createScatterplot(selector = '#scatterplot') {
     .attr('stroke', d => {
       const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
       const isChoroplethSelected = choroplethSelected.includes(d.country);
-      return isChoroplethSelected ? '#000' : 'none';
+      return isChoroplethSelected ? '#ff0000' : 'none';
     })
     .attr('stroke-width', d => {
       const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
@@ -179,6 +179,45 @@ function createScatterplot(selector = '#scatterplot') {
       const isChoroplethSelected = choroplethSelected.includes(d.country);
       d3.select(this).attr('r', isChoroplethSelected ? 7 : 5);
       tooltip.style('opacity', 0);
+    })
+    .on('click', function(event, d) {
+      // Hide tooltip on click
+      tooltip.style('opacity', 0);
+
+      const countryName = d.country;
+      const currentChoroplethSelection = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
+      const isCurrentlySelected = currentChoroplethSelection.includes(countryName);
+
+      let newChoroplethSelection;
+      if (isCurrentlySelected) {
+        // Remove da seleção
+        newChoroplethSelection = currentChoroplethSelection.filter(c => c !== countryName);
+      } else {
+        // Adiciona à seleção (máximo 5)
+        if (currentChoroplethSelection.length < 5) {
+          newChoroplethSelection = [...currentChoroplethSelection, countryName];
+        } else {
+          // Remove o primeiro e adiciona o novo (FIFO) - mas não desmarca checkbox do removido
+          newChoroplethSelection = [...currentChoroplethSelection.slice(1), countryName];
+        }
+
+        // Marca checkbox do país adicionado (mas nunca desmarca)
+        const countryCheckbox = d3.select(`#country-${countryName.replace(/\s+/g, '-')}`);
+        if (!countryCheckbox.empty()) {
+          countryCheckbox.property('checked', true);
+        }
+      }
+
+      // Atualiza estado global com nova seleção
+      if (window.updateGlobalState) {
+        // Atualiza também a lista de países selecionados nos checkboxes
+        const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
+          .map(checkbox => checkbox.value);
+        window.updateGlobalState({
+          choroplethSelectedCountries: newChoroplethSelection,
+          selectedCountries: selectedCountries
+        });
+      }
     });
 
   // Add regression line

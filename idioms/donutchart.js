@@ -136,19 +136,6 @@ function createDonutChart(selector = '#donutchart') {
       tooltip.style('opacity', 0);
     });
 
-  // Adiciona percentagens dentro dos segmentos
-  slices.append('text')
-    .attr('transform', d => `translate(${arc.centroid(d)})`)
-    .attr('text-anchor', 'middle')
-    .attr('dominant-baseline', 'middle')
-    .style('font-size', '14px')
-    .style('font-weight', 'bold')
-    .style('fill', '#fff')
-    .style('text-shadow', '1px 1px 2px rgba(0,0,0,0.7)')
-    .text(d => {
-      const percentage = (d.data.value / d3.sum(donutData, d => d.value)) * 100;
-      return percentage > 5 ? `${percentage.toFixed(1)}%` : '';
-    });
 
   // Adiciona textos no centro do donut
   const centerG = g.append('g')

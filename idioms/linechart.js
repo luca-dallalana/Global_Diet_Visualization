@@ -6,15 +6,15 @@ function createLineChart(selector = '#linechart') {
   // Obtém dados usando getters centralizados
   const selectedFilter = window.getSelectedFilter ? window.getSelectedFilter() : 'total-calories';
   const yearRange = window.getSelectedYearRange ? window.getSelectedYearRange() : { start: 1961, end: 2022 };
-  const selectedCountries = window.getSelectedCountries ? window.getSelectedCountries() : [];
+  const choroplethSelectedCountries = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
 
   // Obtém datasets usando getters
   const obesityData = window.getObesityData ? window.getObesityData() : [];
   const macronutrientData = window.getMacronutrientData ? window.getMacronutrientData() : [];
   const caloriesGdpData = window.getCaloriesGdpData ? window.getCaloriesGdpData() : [];
 
-  // Limita a 10 países no máximo
-  const limitedCountries = selectedCountries.slice(0, 10);
+  // Usa apenas países selecionados no choropleth (máximo 5, já limitado pelo choropleth)
+  const limitedCountries = choroplethSelectedCountries;
 
   let filteredData = [];
   let dataSource;
@@ -81,7 +81,7 @@ function createLineChart(selector = '#linechart') {
       .style('text-align', 'center')
       .style('padding', '50px')
       .style('color', '#666')
-      .text('No data available for the selected filters');
+      .text('Select a country on the map or scatterplot to see its trends');
     return;
   }
 

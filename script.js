@@ -82,9 +82,8 @@ function populateFilters() {
   populateCountryCheckboxes(allCountries);
 }
 
-// Países e ano selecionados por padrão ao carregar a aplicação
-const defaultCountries = ['United States', 'Portugal', 'Spain', 'Brazil', 'Germany', 'France', 'Qatar', 'Mexico', 'Canada', 'Egypt'];
-const defaultYear = '2022'; // Ano padrão inicial
+// Ano padrão inicial
+const defaultYear = '2018';
 
 // Cria checkboxes para seleção de países com funcionalidade de busca
 function populateCountryCheckboxes(countries, preserveSelections = false) {
@@ -116,7 +115,7 @@ function populateCountryCheckboxes(countries, preserveSelections = false) {
       if (preserveSelections) {
         return currentSelections.includes(d); // Mantém seleção anterior
       }
-      return defaultCountries.includes(d); // Usa seleção padrão
+      return true; // Todos os países selecionados por padrão
     })
     .on('change', function() {
       // Verifica se um país foi desmarcado e remove da seleção do choropleth
