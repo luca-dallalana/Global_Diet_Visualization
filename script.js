@@ -1,10 +1,20 @@
-let caloriesGdpData = [];    
-let obesityData = [];        
-let macronutrientData = [];  
+let caloriesGdpData = [];
+let obesityData = [];
+let macronutrientData = [];
 let currentData = [];        // Dados atualmente filtrados para os gráficos
 let scatterplot;
 
-// Configuração das dimensões do Scatterplot (fixas, sem redimensionamento)
+// Estado global centralizado
+let globalState = {
+  selectedCountries: [],
+  currentYear: 2022,
+  yearRange: { start: 1961, end: 2022 },
+  selectedFilter: 'total-calories',
+  selectedDataType: 'calories-gdp',
+  choroplethSelectedCountries: []
+};
+
+// Configuração das dimensões da vis
 function getChartConfig() {
   return {
     width: 500,  // Largura total do gráfico 
@@ -47,7 +57,7 @@ async function loadData() {
     // Inicializa a visualização após carregar todos os dados
     populateFilters();        // Popula dropdowns e listas de países
     setCurrentData();         // Filtra dados baseado nas seleções iniciais
-    createChoropleth('.Map'); // Cria mapa coroplético
+    createChoropleth('.Map'); // Cria mapa
     createScatterplot('.ScatterPlot');      // Cria Scatterplot
     createDonutChart('.DonutChart');        // Cria Donut Plot
     createLineChart('.LineChart');          // Cria Line Chart
@@ -118,15 +128,11 @@ function populateCountryCheckboxes(countries, preserveSelections = false) {
         window.choroplethSelectedCountries = window.choroplethSelectedCountries.filter(c => c !== countryName);
       }
 
-      // Atualiza gráficos quando país é selecionado/desselecionado
-      setCurrentData();
-      createScatterplot();
-      createDonutChart();
-      createLineChart();
-      // Atualiza visuais do mapa
-      if (window.updateMapSelection) {
-        window.updateMapSelection();
-      }
+      // Atualiza estado global quando país é selecionado/desselecionado
+      const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
+        .map(checkbox => checkbox.value);
+
+      updateGlobalState({ selectedCountries: selectedCountries });
     });
 
   // Adiciona label clicável para cada país
@@ -135,10 +141,86 @@ function populateCountryCheckboxes(countries, preserveSelections = false) {
     .text(d => d);
 }
 
-// Define dados atuais baseado nos filtros selecionados (agora simplificado)
+// Funções getter para acesso ao estado global
+window.getGlobalState = function() {
+  return globalState;
+};
+
+window.getSelectedCountries = function() {
+  return globalState.selectedCountries;
+};
+
+window.getCurrentYear = function() {
+  return globalState.currentYear;
+};
+
+window.getSelectedYearRange = function() {
+  return globalState.yearRange;
+};
+
+window.getSelectedFilter = function() {
+  return globalState.selectedFilter;
+};
+
+window.getSelectedDataType = function() {
+  return globalState.selectedDataType;
+};
+
+window.getChoroplethSelectedCountries = function() {
+  return globalState.choroplethSelectedCountries;
+};
+
+window.getCaloriesGdpData = function() {
+  return caloriesGdpData;
+};
+
+window.getObesityData = function() {
+  return obesityData;
+};
+
+window.getMacronutrientData = function() {
+  return macronutrientData;
+};
+
+// Função para atualizar estado e disparar atualizações nos idiomas
+function updateGlobalState(updates) {
+  Object.assign(globalState, updates);
+  updateAllIdioms();
+}
+
+// Exporta função para uso externo
+window.updateGlobalState = updateGlobalState;
+
+// Função para atualizar todos os idiomas
+function updateAllIdioms() {
+  createChoropleth('.Map');
+  createScatterplot('.ScatterPlot');
+  createDonutChart('.DonutChart');
+  createLineChart('.LineChart');
+
+  // Atualiza visuais do mapa se função existir
+  if (window.updateMapSelection) {
+    window.updateMapSelection();
+  }
+}
+
+// Define dados atuais baseado nos filtros selecionados
 function setCurrentData() {
-  // Esta função agora é simplificada pois o scatterplot gerencia seus próprios dados
-  // Mantém apenas para compatibilidade com outros componentes que possam usar currentData
+  // Atualiza estado global baseado nos controles da UI
+  globalState.selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
+    .map(checkbox => checkbox.value);
+
+  globalState.selectedFilter = d3.select('#filterSelect').property('value') || 'total-calories';
+  globalState.selectedDataType = d3.select('#dataSelect').property('value') || 'calories-gdp';
+
+  // Obtém informações de ano do slider usando as funções exportadas do rangeslider
+  if (typeof window.getRangeSliderCurrentYear === 'function') {
+    globalState.currentYear = window.getRangeSliderCurrentYear();
+  }
+  if (typeof window.getRangeSliderYearRange === 'function') {
+    globalState.yearRange = window.getRangeSliderYearRange();
+  }
+
   currentData = [];
 }
 
@@ -151,18 +233,20 @@ function init() {
 function setupEventListeners() {
   // Listener para mudança no tipo de dados do scatter plot
   d3.select('#dataSelect').on('change', function() {
-    setCurrentData();        // Refiltra dados com novo tipo
-    createScatterplot('.ScatterPlot');     // Redesenha scatter plot
+    const selectedDataType = this.value;
+    updateGlobalState({ selectedDataType: selectedDataType });
   });
 
   // Listener para mudança no filtro do line chart
   d3.select('#filterSelect').on('change', function() {
+    const selectedFilter = this.value;
+
     // Atualiza o slider para o novo filtro (restrições de ano)
     if (window.updateSliderForFilter) {
       window.updateSliderForFilter();
     }
-    createChoropleth('.Map');          // Redesenha mapa com novo filtro
-    createLineChart('.LineChart');     // Redesenha line chart com novo filtro
+
+    updateGlobalState({ selectedFilter: selectedFilter });
   });
 
   // Funcionalidade de busca de países
@@ -188,14 +272,11 @@ function setupEventListeners() {
     // Seleciona todos os países visíveis
     d3.selectAll('#countryCheckboxes input[type="checkbox"]')
       .property('checked', true);
-    setCurrentData();
-    createScatterplot('.ScatterPlot');
-    createDonutChart('.DonutChart');
-    createLineChart('.LineChart');
-    // Atualiza visuais do mapa
-    if (window.updateMapSelection) {
-      window.updateMapSelection();
-    }
+
+    const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
+      .map(checkbox => checkbox.value);
+
+    updateGlobalState({ selectedCountries: selectedCountries });
   });
 
   d3.select('#clearAllCountries').on('click', function() {
@@ -203,18 +284,9 @@ function setupEventListeners() {
     d3.selectAll('#countryCheckboxes input[type="checkbox"]')
       .property('checked', false);
 
-    // Limpa também a seleção do choropleth
-    if (window.choroplethSelectedCountries) {
-      window.choroplethSelectedCountries = [];
-    }
-
-    setCurrentData();
-    createScatterplot('.ScatterPlot');
-    createDonutChart('.DonutChart');
-    createLineChart('.LineChart');
-    // Atualiza visuais do mapa
-    if (window.updateMapSelection) {
-      window.updateMapSelection();
-    }
+    updateGlobalState({
+      selectedCountries: [],
+      choroplethSelectedCountries: []
+    });
   });
 }

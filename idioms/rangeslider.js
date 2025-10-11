@@ -96,7 +96,14 @@ function createYearRangeSlider() {
       currentYear = Math.max(startYear, Math.min(endYear, currentYear));
 
       updateSlider();
-      createLineChart(); // Atualiza line chart quando o intervalo muda
+
+      // Atualiza estado global quando o intervalo muda
+      if (window.updateGlobalState) {
+        window.updateGlobalState({
+          currentYear: currentYear,
+          yearRange: { start: startYear, end: endYear }
+        });
+      }
     })
     .on('end', function(event, d) {
       // Restaura a cor da borda original
@@ -119,7 +126,14 @@ function createYearRangeSlider() {
       d3.select(this).attr('cx', xScale(currentYear)); // Reposiciona o círculo
 
       updateSlider();
-      updateVisualization(); // IMPORTANTE: Atualiza os gráficos imediatamente
+
+      // Atualiza estado global quando o ano atual muda
+      if (window.updateGlobalState) {
+        window.updateGlobalState({
+          currentYear: currentYear,
+          yearRange: { start: startYear, end: endYear }
+        });
+      }
     })
     .on('end', function(event, d) {
       // Restaura a cor da borda original
@@ -283,12 +297,12 @@ function createYearRangeSlider() {
     updateSlider();
   }
 
-  // Funções exportadas para uso por outros componentes
-  window.getSelectedYearRange = function() {
+  // Funções exportadas para uso por outros componentes (nomes únicos para evitar conflitos)
+  window.getRangeSliderYearRange = function() {
     return { start: startYear, end: endYear };
   };
 
-  window.getCurrentYear = function() {
+  window.getRangeSliderCurrentYear = function() {
     return currentYear;
   };
 

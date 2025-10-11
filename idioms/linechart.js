@@ -3,11 +3,15 @@ function createLineChart(selector = '#linechart') {
   const container = selector.startsWith('.') ? d3.select(selector).select('#linechart') : d3.select(selector);
   container.selectAll('*').remove();
 
-  // Obtém o filtro selecionado, intervalo de anos e países selecionados
-  const selectedFilter = d3.select('#filterSelect').property('value');
+  // Obtém dados usando getters centralizados
+  const selectedFilter = window.getSelectedFilter ? window.getSelectedFilter() : 'total-calories';
   const yearRange = window.getSelectedYearRange ? window.getSelectedYearRange() : { start: 1961, end: 2022 };
-  const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
-    .map(checkbox => checkbox.value);
+  const selectedCountries = window.getSelectedCountries ? window.getSelectedCountries() : [];
+
+  // Obtém datasets usando getters
+  const obesityData = window.getObesityData ? window.getObesityData() : [];
+  const macronutrientData = window.getMacronutrientData ? window.getMacronutrientData() : [];
+  const caloriesGdpData = window.getCaloriesGdpData ? window.getCaloriesGdpData() : [];
 
   // Limita a 10 países no máximo
   const limitedCountries = selectedCountries.slice(0, 10);
@@ -124,7 +128,8 @@ function createLineChart(selector = '#linechart') {
   // Desenha linhas para cada país
   dataByCountry.forEach((countryData, country) => {
     const sortedData = countryData.sort((a, b) => a.year - b.year);
-    const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(country);
+    const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
+    const isChoroplethSelected = choroplethSelected.includes(country);
 
     // Linha com destaque para países selecionados no choropleth
     svg.append('path')

@@ -1,9 +1,13 @@
 // Função para preparar dados do scatterplot baseado no tipo selecionado
 function prepareScatterplotData() {
-  const dataType = d3.select('#dataSelect').property('value');
+  const dataType = window.getSelectedDataType ? window.getSelectedDataType() : 'calories-gdp';
   const currentYear = window.getCurrentYear ? window.getCurrentYear() : 2022;
-  const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
-    .map(checkbox => checkbox.value);
+  const selectedCountries = window.getSelectedCountries ? window.getSelectedCountries() : [];
+
+  // Obtém dados usando getters
+  const caloriesGdpData = window.getCaloriesGdpData ? window.getCaloriesGdpData() : [];
+  const obesityData = window.getObesityData ? window.getObesityData() : [];
+  const macronutrientData = window.getMacronutrientData ? window.getMacronutrientData() : [];
 
   let baseData = [];
 
@@ -131,27 +135,33 @@ function createScatterplot(selector = '#scatterplot') {
     .attr('cx', d => xScale(d.x))
     .attr('cy', d => yScale(d.y))
     .attr('r', d => {
-      const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(d.country);
+      const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
+      const isChoroplethSelected = choroplethSelected.includes(d.country);
       return isChoroplethSelected ? 7 : 5;
     })
     .attr('fill', d => {
-      const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(d.country);
+      const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
+      const isChoroplethSelected = choroplethSelected.includes(d.country);
       return isChoroplethSelected ? '#ff4444' : pointColor;
     })
     .attr('stroke', d => {
-      const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(d.country);
+      const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
+      const isChoroplethSelected = choroplethSelected.includes(d.country);
       return isChoroplethSelected ? '#000' : 'none';
     })
     .attr('stroke-width', d => {
-      const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(d.country);
+      const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
+      const isChoroplethSelected = choroplethSelected.includes(d.country);
       return isChoroplethSelected ? 2 : 0;
     })
     .style('opacity', d => {
-      const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(d.country);
+      const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
+      const isChoroplethSelected = choroplethSelected.includes(d.country);
       return isChoroplethSelected ? 1 : 0.8;
     })
     .on('mouseover', function(event, d) {
-      const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(d.country);
+      const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
+      const isChoroplethSelected = choroplethSelected.includes(d.country);
       d3.select(this).attr('r', isChoroplethSelected ? 9 : 7);
       tooltip
         .style('opacity', 1)
@@ -165,7 +175,8 @@ function createScatterplot(selector = '#scatterplot') {
         .style('top', (event.pageY - 10) + 'px');
     })
     .on('mouseout', function(event, d) {
-      const isChoroplethSelected = window.choroplethSelectedCountries && window.choroplethSelectedCountries.includes(d.country);
+      const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
+      const isChoroplethSelected = choroplethSelected.includes(d.country);
       d3.select(this).attr('r', isChoroplethSelected ? 7 : 5);
       tooltip.style('opacity', 0);
     });

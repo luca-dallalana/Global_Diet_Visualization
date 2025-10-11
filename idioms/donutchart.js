@@ -3,10 +3,10 @@ function createDonutChart(selector = '#donutchart') {
   const container = selector.startsWith('.') ? d3.select(selector).select('#donutchart') : d3.select(selector);
   container.selectAll('*').remove();
 
-  // Obtém os países selecionados e o ano atual do slider
+  // Obtém dados usando getters centralizados
   const currentYear = window.getCurrentYear ? window.getCurrentYear() : 2022;
-  const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
-    .map(checkbox => checkbox.value);
+  const selectedCountries = window.getSelectedCountries ? window.getSelectedCountries() : [];
+  const macronutrientData = window.getMacronutrientData ? window.getMacronutrientData() : [];
 
   // Filtra dados para o ano atual e países selecionados
   let yearData = macronutrientData.filter(d => d.year === currentYear);

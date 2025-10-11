@@ -202,29 +202,35 @@ function createChoropleth(selector = '.Map') {
           const isCurrentlySelected = window.choroplethSelectedCountries.includes(countryName);
           console.log('Currently selected:', isCurrentlySelected);
 
+          let newChoroplethSelection;
           if (isCurrentlySelected) {
             // Remove da seleção
-            window.choroplethSelectedCountries = window.choroplethSelectedCountries.filter(c => c !== countryName);
-            console.log('Removed from selection. New list:', window.choroplethSelectedCountries);
+            newChoroplethSelection = window.choroplethSelectedCountries.filter(c => c !== countryName);
+            console.log('Removed from selection. New list:', newChoroplethSelection);
           } else {
             // Adiciona à seleção (máximo 10)
             if (window.choroplethSelectedCountries.length < 10) {
-              window.choroplethSelectedCountries.push(countryName);
-              console.log('Added to selection. New list:', window.choroplethSelectedCountries);
+              newChoroplethSelection = [...window.choroplethSelectedCountries, countryName];
+              console.log('Added to selection. New list:', newChoroplethSelection);
             } else {
               // Remove o primeiro e adiciona o novo (FIFO)
-              window.choroplethSelectedCountries.shift();
-              window.choroplethSelectedCountries.push(countryName);
-              console.log('FIFO replacement. New list:', window.choroplethSelectedCountries);
+              newChoroplethSelection = [...window.choroplethSelectedCountries.slice(1), countryName];
+              console.log('FIFO replacement. New list:', newChoroplethSelection);
             }
           }
 
-          // Atualiza visuais do mapa
-          updateAllCountryVisuals();
-
-          // Atualiza os gráficos para destacar países selecionados no choropleth
-          createScatterplot('.ScatterPlot');
-          createLineChart('.LineChart');
+          // Atualiza estado global com nova seleção
+          if (window.updateGlobalState) {
+            window.updateGlobalState({ choroplethSelectedCountries: newChoroplethSelection });
+          } else {
+            // Fallback se updateGlobalState não existir
+            window.choroplethSelectedCountries = newChoroplethSelection;
+            // Atualiza visuais do mapa
+            updateAllCountryVisuals();
+            // Atualiza os gráficos para destacar países selecionados no choropleth
+            createScatterplot('.ScatterPlot');
+            createLineChart('.LineChart');
+          }
         } else {
           console.log('Country not found in data. Available countries:', allCountries.slice(0, 10));
         }
@@ -237,9 +243,10 @@ function createChoropleth(selector = '.Map') {
 
   // Função para atualizar visual do país baseado nos dois tipos de seleção
   function updateCountryVisual(countryElement, countryName) {
-    const isCheckboxSelected = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
-      .map(checkbox => checkbox.value).includes(countryName);
-    const isChoroplethSelected = window.choroplethSelectedCountries.includes(countryName);
+    const selectedCountries = window.getSelectedCountries ? window.getSelectedCountries() : [];
+    const isCheckboxSelected = selectedCountries.includes(countryName);
+    const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
+    const isChoroplethSelected = choroplethSelected.includes(countryName);
 
     if (isChoroplethSelected) {
       // Choropleth selection: dark black thick outline
