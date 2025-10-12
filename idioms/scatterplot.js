@@ -201,10 +201,10 @@ function createScatterplot(selector = '#scatterplot') {
       });
     });
 
-  const regression = calculateLinearRegression(scatterplotData);
+  const regression = calculateLinearRegression(validData);
   if (regression) {
-    const xMin = d3.min(scatterplotData, d => d.x);
-    const xMax = d3.max(scatterplotData, d => d.x);
+    const xMin = d3.min(validData, d => d.x);
+    const xMax = d3.max(validData, d => d.x);
     const lineData = [
       { x: xMin, y: regression.slope * xMin + regression.intercept },
       { x: xMax, y: regression.slope * xMax + regression.intercept }
