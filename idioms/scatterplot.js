@@ -3,7 +3,7 @@ function prepareScatterplotData() {
   const currentYear = window.getCurrentYear();
   const selectedCountries = window.getSelectedCountries();
 
-  // Obtém dados usando getters
+  // Usa getters pra aceder ao GlobalState
   const caloriesGdpData = window.getCaloriesGdpData();
   const obesityData = window.getObesityData();
 

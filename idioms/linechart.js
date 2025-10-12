@@ -3,20 +3,13 @@ function createLineChart(selector = '#linechart') {
   const container = selector.startsWith('.') ? d3.select(selector).select('#linechart') : d3.select(selector);
   container.selectAll('*').remove();
 
-  // Obtém dados usando getters centralizados
-  const selectedFilter = window.getSelectedFilter ? window.getSelectedFilter() : 'total-calories';
-  const yearRange = window.getSelectedYearRange ? window.getSelectedYearRange() : { start: 1961, end: 2022 };
-  const choroplethSelectedCountries = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
-
-  // Obtém datasets usando getters
-  const obesityData = window.getObesityData ? window.getObesityData() : [];
-  const macronutrientData = window.getMacronutrientData ? window.getMacronutrientData() : [];
-  const caloriesGdpData = window.getCaloriesGdpData ? window.getCaloriesGdpData() : [];
-
-  // Usa apenas países selecionados no choropleth (máximo 5, já limitado pelo choropleth)
-  const limitedCountries = choroplethSelectedCountries;
-
-  let filteredData = [];
+  // Usa getters pra aceder ao GlobalState
+  const selectedFilter = window.getSelectedFilter();
+  const yearRange = window.getSelectedYearRange();
+  const limitedCountries = window.getChoroplethSelectedCountries();
+  const obesityData = window.getObesityData();
+  const macronutrientData = window.getMacronutrientData();
+  const caloriesGdpData = window.getCaloriesGdpData();
   let dataSource;
   let valueField;
   let yAxisLabel;
@@ -57,20 +50,19 @@ function createLineChart(selector = '#linechart') {
       break;
   }
 
-  // Filtra dados baseado no dataset selecionado
-  filteredData = dataSource.filter(d => {
-    const value = typeof valueField === 'function' ? valueField(d) : d[valueField];
-    return limitedCountries.includes(d.country) &&
-           d.year >= yearRange.start &&
-           d.year <= yearRange.end &&
-           !isNaN(value);
-  });
-
-  // Adiciona o campo de valor calculado aos dados
-  filteredData = filteredData.map(d => ({
-    ...d,
-    value: typeof valueField === 'function' ? valueField(d) : d[valueField]
-  }));
+  // Filtra e processa dados baseado no dataset selecionado
+  const filteredData = dataSource
+    .filter(d => {
+      const value = typeof valueField === 'function' ? valueField(d) : d[valueField];
+      return limitedCountries.includes(d.country) &&
+             d.year >= yearRange.start &&
+             d.year <= yearRange.end &&
+             !isNaN(value);
+    })
+    .map(d => ({
+      ...d,
+      value: typeof valueField === 'function' ? valueField(d) : d[valueField]
+    }));
 
   // Atualiza o título do gráfico
   d3.select('#linechart-title').text(chartTitle);
@@ -106,7 +98,6 @@ function createLineChart(selector = '#linechart') {
   // Escala de cores para países
   const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
-  // Cria SVG
   const svg = container
     .append('svg')
     .attr('width', width)
@@ -114,7 +105,6 @@ function createLineChart(selector = '#linechart') {
     .style('margin-left', '10px')
     .style('margin-top', '10px');
 
-  // Cria tooltip
   const tooltip = d3.select('body')
     .append('div')
     .attr('class', 'tooltip');
@@ -125,13 +115,14 @@ function createLineChart(selector = '#linechart') {
     .y(d => yScale(d.value))
     .curve(d3.curveMonotoneX);
 
+  // Obtém países destacados no choropleth 
+  const choroplethSelected = window.getChoroplethSelectedCountries();
+
   // Desenha linhas para cada país
   dataByCountry.forEach((countryData, country) => {
     const sortedData = countryData.sort((a, b) => a.year - b.year);
-    const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
     const isChoroplethSelected = choroplethSelected.includes(country);
 
-    // Linha com destaque para países selecionados no choropleth
     svg.append('path')
       .datum(sortedData)
       .attr('fill', 'none')
@@ -149,8 +140,6 @@ function createLineChart(selector = '#linechart') {
       .attr('cy', d => yScale(d.value))
       .attr('r', isChoroplethSelected ? 4 : 3)
       .attr('fill', isChoroplethSelected ? d3.color(colorScale(country)).brighter(0.5) : colorScale(country))
-      .attr('stroke', isChoroplethSelected ? '#000' : 'none')
-      .attr('stroke-width', isChoroplethSelected ? 2 : 0)
       .on('mouseover', function(event, d) {
         d3.select(this).attr('r', isChoroplethSelected ? 6 : 5);
         tooltip
