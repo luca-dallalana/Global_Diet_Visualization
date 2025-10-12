@@ -1,13 +1,11 @@
-// Função para preparar dados do scatterplot baseado no tipo selecionado
 function prepareScatterplotData() {
-  const dataType = window.getSelectedDataType ? window.getSelectedDataType() : 'calories-gdp';
-  const currentYear = window.getCurrentYear ? window.getCurrentYear() : 2022;
-  const selectedCountries = window.getSelectedCountries ? window.getSelectedCountries() : [];
+  const dataType = window.getSelectedDataType();
+  const currentYear = window.getCurrentYear();
+  const selectedCountries = window.getSelectedCountries();
 
   // Obtém dados usando getters
-  const caloriesGdpData = window.getCaloriesGdpData ? window.getCaloriesGdpData() : [];
-  const obesityData = window.getObesityData ? window.getObesityData() : [];
-  const macronutrientData = window.getMacronutrientData ? window.getMacronutrientData() : [];
+  const caloriesGdpData = window.getCaloriesGdpData();
+  const obesityData = window.getObesityData();
 
   let baseData = [];
 
@@ -25,7 +23,6 @@ function prepareScatterplotData() {
       break;
     case 'obesity-gdp':
       // Combina dados de obesidade com PIB
-      baseData = [];
       obesityData.forEach(obesityRecord => {
         const gdpRecord = caloriesGdpData.find(gdp =>
           gdp.country === obesityRecord.country && gdp.year === obesityRecord.year
@@ -43,8 +40,6 @@ function prepareScatterplotData() {
       });
       break;
     case 'calories-obesity':
-      // Combina dados de calorias com obesidade
-      baseData = [];
       caloriesGdpData.forEach(caloriesRecord => {
         const obesityRecord = obesityData.find(obesity =>
           obesity.country === caloriesRecord.country && obesity.year === caloriesRecord.year
@@ -64,19 +59,18 @@ function prepareScatterplotData() {
   }
 
   // Aplica filtros de ano e países selecionados
-  return baseData.filter(d => {
-    const yearMatch = d.year === currentYear;                              // Ano do círculo do slider
-    const countryMatch = selectedCountries.length > 0 && selectedCountries.includes(d.country); // Países selecionados
-    return yearMatch && countryMatch && !isNaN(d.x) && !isNaN(d.y);       // Remove dados inválidos
-  });
+  return baseData.filter(d =>
+    d.year === currentYear &&
+    selectedCountries.length > 0 &&
+    selectedCountries.includes(d.country) &&
+    !isNaN(d.x) && !isNaN(d.y)
+  );
 }
 
 function createScatterplot(selector = '#scatterplot') {
-  // Limpa o gráfico anterior para evitar sobreposições
   const container = selector.startsWith('.') ? d3.select(selector).select('#scatterplot') : d3.select(selector);
   container.selectAll('*').remove();
 
-  // Prepara dados para o scatterplot
   const scatterplotData = prepareScatterplotData();
 
   // Verifica se há dados para mostrar com os filtros atuais
@@ -93,7 +87,6 @@ function createScatterplot(selector = '#scatterplot') {
   // Obtém configurações de dimensões fixas do gráfico
   const config = getChartConfig();
 
-  // Cria elemento SVG principal
   const svg = container
     .append('svg')
     .attr('width', config.width)
@@ -101,27 +94,32 @@ function createScatterplot(selector = '#scatterplot') {
     .style('margin-down', '5px')
     .style('margin-left', '40px');
 
-  // Cria escalas - limita escala do PIB para máximo $160,000
+  // limita escala do PIB para máximo $140,000
   const isGdpOnX = scatterplotData[0]?.xLabel?.includes('GDP');
-  const xDomain = isGdpOnX ?
-    [0, Math.min(160000, d3.max(scatterplotData, d => d.x))] : // Alterar 160000 para mudar limite máximo
-    d3.extent(scatterplotData, d => d.x);
 
-  // Escala X: mapeia valores dos dados para posições horizontais
-  const xScale = d3.scaleLinear()
-    .domain(xDomain) // Intervalo dos dados
-    .nice() // Arredonda os valores para números "limpos"
-    .range([config.margin.left, config.width - config.margin.right]); // Posições em pixels
+  const validData = scatterplotData.filter(d => {
+    if (isGdpOnX) {
+      return d.x >= 250 && d.x <= 140000 && d.y > 0;
+    }
+    return d.x >= 0 && d.y > 0;
+  });
 
-  // Escala Y: mapeia valores dos dados para posições verticais
+  const xScale = isGdpOnX ?
+    d3.scaleLog()
+      .domain([250, 140000])
+      .range([config.margin.left, config.width - config.margin.right]) :
+    d3.scaleLinear()
+      .domain(d3.extent(validData, d => d.x))
+      .nice()
+      .range([config.margin.left, config.width - config.margin.right]);
+
   const yScale = d3.scaleLinear()
-    .domain(d3.extent(scatterplotData, d => d.y)) // Min/max dos dados Y
+    .domain(d3.extent(validData, d => d.y))
     .nice()
-    .range([config.height - config.margin.bottom, config.margin.top]); // Invertido (topo = menor valor)
+    .range([config.height - config.margin.bottom, config.margin.top]);
 
   const pointColor = 'steelblue';
 
-  // Cria tooltip para mostrar informações ao passar o mouse
   const tooltip = d3.select('body')
     .append('div')
     .attr('class', 'tooltip');
@@ -134,33 +132,19 @@ function createScatterplot(selector = '#scatterplot') {
     .attr('class', 'circle')
     .attr('cx', d => xScale(d.x))
     .attr('cy', d => yScale(d.y))
-    .attr('r', d => {
-      const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
+    .each(function() {
+      const choroplethSelected = window.getChoroplethSelectedCountries();
       const isChoroplethSelected = choroplethSelected.includes(d.country);
-      return isChoroplethSelected ? 7 : 5;
-    })
-    .attr('fill', d => {
-      const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
-      const isChoroplethSelected = choroplethSelected.includes(d.country);
-      return isChoroplethSelected ? '#ff4444' : pointColor;
-    })
-    .attr('stroke', d => {
-      const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
-      const isChoroplethSelected = choroplethSelected.includes(d.country);
-      return isChoroplethSelected ? '#ff0000' : 'none';
-    })
-    .attr('stroke-width', d => {
-      const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
-      const isChoroplethSelected = choroplethSelected.includes(d.country);
-      return isChoroplethSelected ? 2 : 0;
-    })
-    .style('opacity', d => {
-      const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
-      const isChoroplethSelected = choroplethSelected.includes(d.country);
-      return isChoroplethSelected ? 1 : 0.8;
+
+      d3.select(this)
+        .attr('r', isChoroplethSelected ? 7 : 5)
+        .attr('fill', isChoroplethSelected ? '#ff4444' : pointColor)
+        .attr('stroke', isChoroplethSelected ? '#ff0000' : 'none')
+        .attr('stroke-width', isChoroplethSelected ? 2 : 0)
+        .style('opacity', isChoroplethSelected ? 1 : 0.8);
     })
     .on('mouseover', function(event, d) {
-      const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
+      const choroplethSelected = window.getChoroplethSelectedCountries();
       const isChoroplethSelected = choroplethSelected.includes(d.country);
       d3.select(this).attr('r', isChoroplethSelected ? 9 : 7);
       tooltip
@@ -174,18 +158,18 @@ function createScatterplot(selector = '#scatterplot') {
         .style('left', (event.pageX + 10) + 'px')
         .style('top', (event.pageY - 10) + 'px');
     })
-    .on('mouseout', function(event, d) {
-      const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
+    .on('mouseout', function(d) {
+      const choroplethSelected = window.getChoroplethSelectedCountries();
       const isChoroplethSelected = choroplethSelected.includes(d.country);
       d3.select(this).attr('r', isChoroplethSelected ? 7 : 5);
       tooltip.style('opacity', 0);
     })
-    .on('click', function(event, d) {
+    .on('click', function(d) {
       // Hide tooltip on click
       tooltip.style('opacity', 0);
 
       const countryName = d.country;
-      const currentChoroplethSelection = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
+      const currentChoroplethSelection = window.getChoroplethSelectedCountries();
       const isCurrentlySelected = currentChoroplethSelection.includes(countryName);
 
       let newChoroplethSelection;
@@ -197,35 +181,33 @@ function createScatterplot(selector = '#scatterplot') {
         if (currentChoroplethSelection.length < 5) {
           newChoroplethSelection = [...currentChoroplethSelection, countryName];
         } else {
-          // Remove o primeiro e adiciona o novo (FIFO) - mas não desmarca checkbox do removido
+          // Remove o primeiro e adiciona o novo 
           newChoroplethSelection = [...currentChoroplethSelection.slice(1), countryName];
         }
 
-        // Marca checkbox do país adicionado (mas nunca desmarca)
+        // Marca checkbox do país adicionado 
         const countryCheckbox = d3.select(`#country-${countryName.replace(/\s+/g, '-')}`);
         if (!countryCheckbox.empty()) {
           countryCheckbox.property('checked', true);
         }
       }
 
-      // Atualiza estado global com nova seleção
-      if (window.updateGlobalState) {
-        // Atualiza também a lista de países selecionados nos checkboxes
-        const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
-          .map(checkbox => checkbox.value);
-        window.updateGlobalState({
-          choroplethSelectedCountries: newChoroplethSelection,
-          selectedCountries: selectedCountries
-        });
-      }
+      // Atualiza estado global com nova escolha
+      const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
+        .map(checkbox => checkbox.value);
+      window.updateGlobalState({
+        choroplethSelectedCountries: newChoroplethSelection,
+        selectedCountries: selectedCountries
+      });
     });
 
-  // Add regression line
   const regression = calculateLinearRegression(scatterplotData);
   if (regression) {
+    const xMin = d3.min(scatterplotData, d => d.x);
+    const xMax = d3.max(scatterplotData, d => d.x);
     const lineData = [
-      { x: d3.min(scatterplotData, d => d.x), y: regression.slope * d3.min(scatterplotData, d => d.x) + regression.intercept },
-      { x: d3.max(scatterplotData, d => d.x), y: regression.slope * d3.max(scatterplotData, d => d.x) + regression.intercept }
+      { x: xMin, y: regression.slope * xMin + regression.intercept },
+      { x: xMax, y: regression.slope * xMax + regression.intercept }
     ];
 
     svg.append('path')
@@ -236,7 +218,6 @@ function createScatterplot(selector = '#scatterplot') {
         .y(d => yScale(d.y))
       );
 
-    // Add regression equation
     svg.append('text')
       .attr('class', 'regression-info')
       .attr('x', config.width - config.margin.right - 10)
@@ -245,24 +226,13 @@ function createScatterplot(selector = '#scatterplot') {
       .text(`R² = ${regression.rSquared.toFixed(3)}`);
   }
 
-  // Create custom tick values and formatters
-  const isGdpOnXAxis = scatterplotData[0]?.xLabel?.includes('GDP');
+  const xAxis = isGdpOnX ?
+    d3.axisBottom(xScale)
+      .tickValues([250, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000])
+      .tickFormat(d => d < 1000 ? d.toString() : (d / 1000) + 'k') :
+    d3.axisBottom(xScale).ticks(6);
 
-  // X-axis with custom ticks
-  let xAxis;
-  if (isGdpOnXAxis) {
-    const xTickValues = [0, 20000, 40000, 60000, 80000, 100000, 120000, 140000, 160000];
-    xAxis = d3.axisBottom(xScale)
-      .tickValues(xTickValues)
-      .tickFormat(d => d / 1000);
-  } else {
-    xAxis = d3.axisBottom(xScale).ticks(8);
-  }
-
-  // Y-axis with custom ticks
-  const yTickValues = d3.range(d3.min(scatterplotData, d => d.y), d3.max(scatterplotData, d => d.y) + 1,
-    (d3.max(scatterplotData, d => d.y) - d3.min(scatterplotData, d => d.y)) / 6);
-  const yAxis = d3.axisLeft(yScale).tickValues(yTickValues);
+  const yAxis = d3.axisLeft(yScale).ticks(6);
 
   svg.append('g')
     .attr('class', 'axis')
@@ -274,9 +244,8 @@ function createScatterplot(selector = '#scatterplot') {
     .attr('transform', `translate(${config.margin.left},0)`)
     .call(yAxis);
 
-  // Add axis labels with thousands notation
   let xLabel = scatterplotData[0]?.xLabel;
-  if (isGdpOnXAxis) {
+  if (isGdpOnX) {
     xLabel = xLabel.replace('($)', '(thousands $)');
   }
 
