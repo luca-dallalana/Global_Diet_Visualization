@@ -177,6 +177,18 @@ function updateAllIdioms() {
 }
 
 function setInitialData() {
+  // Define países iniciais para o choropleth
+  const initialChoroplethCountries = ['United States', 'Brazil', 'India', 'China', 'Australia'];
+  globalState.choroplethSelectedCountries = initialChoroplethCountries;
+
+  // Pre-seleciona os checkboxes dos países iniciais
+  initialChoroplethCountries.forEach(country => {
+    const checkbox = d3.select(`#country-${country.replace(/\s+/g, '-')}`);
+    if (!checkbox.empty()) {
+      checkbox.property('checked', true);
+    }
+  });
+
   globalState.selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
     .map(checkbox => checkbox.value);
 
