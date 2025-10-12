@@ -214,59 +214,54 @@ function createChoropleth(selector = '.Map') {
   });
 
 
-  // Legenda de cor
-  const legendWidth = Math.min(200, width * 0.25); 
+  // Legenda de cor com buckets
+  const legendWidth = Math.min(200, width * 0.25);
   const legendHeight = 20;
-  const legendX = width - legendWidth - 20; 
-  const legendY = height - 60; 
+  const legendX = width - legendWidth - 20;
+  const legendY = height - 60;
 
   const legend = svg.append('g')
     .attr('class', 'legend')
     .attr('transform', `translate(${legendX}, ${legendY})`);
 
-  // Cria o gradiente da legenda
-  const defs = svg.append('defs');
-  const gradient = defs.append('linearGradient')
-    .attr('id', 'legend-gradient')
-    .attr('x1', '0%')
-    .attr('x2', '100%')
-    .attr('y1', '0%')
-    .attr('y2', '0%');
-
-  // faz o actual gradiente
+  // Cria buckets discretos baseados no domínio
   const domain = colorScale.domain();
-  gradient.append('stop')
-    .attr('offset', '0%')
-    .attr('stop-color', colorScale(domain[0])); 
-  gradient.append('stop')
-    .attr('offset', '100%')
-    .attr('stop-color', colorScale(domain[1]));
+  const numBuckets = 5;
+  const bucketWidth = legendWidth / numBuckets;
 
-  // cor da legenda 
-  legend.append('rect')
-    .attr('width', legendWidth)
-    .attr('height', legendHeight)
-    .style('fill', 'url(#legend-gradient)')
-    .attr('stroke', '#333')
-    .attr('stroke-width', 1);
+  // Calcula valores dos buckets
+  const bucketValues = [];
+  for (let i = 0; i <= numBuckets; i++) {
+    bucketValues.push(domain[0] + (domain[1] - domain[0]) * i / numBuckets);
+  }
 
-  // valor min da legenda 
-  legend.append('text')
-    .attr('x', 0)
-    .attr('y', legendHeight + 15)
-    .attr('text-anchor', 'start')
-    .attr('font-size', '12px')
-    .text(domain[0].toFixed(selectedFilter === 'obesity-rate' ? 1 : 0));
+  // Cria retângulos dos buckets
+  for (let i = 0; i < numBuckets; i++) {
+    const bucketValue = domain[0] + (domain[1] - domain[0]) * (i + 0.5) / numBuckets;
 
-  // valor max da legenda
-  legend.append('text')
-    .attr('x', legendWidth)
-    .attr('y', legendHeight + 15)
-    .attr('text-anchor', 'end')
-    .attr('font-size', '12px')
-    .text(domain[1].toFixed(selectedFilter === 'obesity-rate' ? 1 : 0));
+    legend.append('rect')
+      .attr('x', i * bucketWidth)
+      .attr('y', 0)
+      .attr('width', bucketWidth)
+      .attr('height', legendHeight)
+      .attr('fill', colorScale(bucketValue))
+      .attr('stroke', '#333')
+      .attr('stroke-width', 0.5);
+  }
 
-  // legenda
+  // Adiciona valores nos buckets
+  for (let i = 0; i <= numBuckets; i++) {
+    if (i === 0 || i === numBuckets) { // Apenas min e max
+      legend.append('text')
+        .attr('x', i * bucketWidth)
+        .attr('y', legendHeight + 15)
+        .attr('text-anchor', i === 0 ? 'start' : 'end')
+        .attr('font-size', '10px')
+        .text(bucketValues[i].toFixed(selectedFilter === 'obesity-rate' ? 1 : 0));
+    }
+  }
+
+  // Título da legenda
   legend.append('text')
     .attr('x', legendWidth / 2)
     .attr('y', -5)
