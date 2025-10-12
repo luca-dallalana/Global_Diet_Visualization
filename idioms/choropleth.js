@@ -140,8 +140,18 @@ function createChoropleth(selector = '.Map') {
         const countryValue = dataByCountry.get(countryName);
         return countryValue ? colorScale(countryValue) : '#ccc'; // Ve a hue do valor ou cinza se n tiver
       })
-      .attr('stroke', '#333') 
-      .attr('stroke-width', 0.5) 
+      .attr('stroke', function(d) {
+        // Red outline for selected countries
+        const countryName = countryNameMap[d.properties.name] || d.properties.name;
+        const choroplethSelected = window.getChoroplethSelectedCountries();
+        return choroplethSelected.includes(countryName) ? '#ff0000' : '#333';
+      })
+      .attr('stroke-width', function(d) {
+        // Thicker outline for selected countries
+        const countryName = countryNameMap[d.properties.name] || d.properties.name;
+        const choroplethSelected = window.getChoroplethSelectedCountries();
+        return choroplethSelected.includes(countryName) ? 2 : 0.5;
+      }) 
       .style('cursor', 'pointer') // maozinha
       // Hover 
       .on('mouseover', function(event, d) {
