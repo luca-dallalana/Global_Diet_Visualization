@@ -1,28 +1,19 @@
-// Lista global de países selecionados no choropleth (máximo 5)
-window.choroplethSelectedCountries = window.choroplethSelectedCountries || [];
-
-// Mapa global de nomes de países para usar em funções externas
-let globalCountryNameMap = {};
-let globalSvg = null;
-
 function createChoropleth(selector = '.Map') {
-  // Limpa o mapa anterior
   const container = d3.select(selector);
-  container.selectAll('svg').remove();
+  container.selectAll('svg').remove(); 
 
-  // Obtém o filtro selecionado
-  const selectedFilter = d3.select('#filterSelect').property('value');
-  const currentYear = window.getCurrentYear ? window.getCurrentYear() : 2022;
+  // Usa getters pra aceder a GlobalSTate
+  const selectedFilter = window.getSelectedFilter();
+  const currentYear = window.getCurrentYear();
+  const obesityData = window.getObesityData();
+  const macronutrientData = window.getMacronutrientData();
+  const caloriesGdpData = window.getCaloriesGdpData();
 
-  // Configuração das dimensões - preenche todo o container sem margens
   const containerElement = container.node();
   const containerRect = containerElement.getBoundingClientRect();
-  const width = containerRect.width || 800;  // Fallback se não conseguir obter largura
-  const height = containerRect.height || 500; // Fallback se não conseguir obter altura
+  const width = containerRect.width;
+  const height = containerRect.height;
 
-  console.log('Container dimensions:', width, 'x', height);
-
-  // Cria SVG que preenche todo o container
   const svg = container
     .append('svg')
     .attr('width', '100%')
@@ -31,17 +22,13 @@ function createChoropleth(selector = '.Map') {
     .attr('preserveAspectRatio', 'xMidYMid meet')
     .style('background-color', '#f0f8ff');
 
-  // Armazena referência global do SVG
-  globalSvg = svg;
+  const projection = d3.geoNaturalEarth1(); 
+  const path = d3.geoPath().projection(projection); 
 
-  // Projeção do mapa - será ajustada depois de carregar os dados
-  const projection = d3.geoNaturalEarth1();
-  const path = d3.geoPath().projection(projection);
-
-  // Prepara dados baseado no filtro selecionado
   let mapData = [];
   let valueField, colorScale, legendTitle;
 
+  // Escolhe dados a mostrat baseado no filtro selecionado
   switch(selectedFilter) {
     case 'obesity-rate':
       mapData = obesityData.filter(d => d.year === currentYear);
@@ -85,30 +72,25 @@ function createChoropleth(selector = '.Map') {
       break;
   }
 
-  // Cria um mapa de dados por país para lookup rápido
   const dataByCountry = new Map();
   mapData.forEach(d => {
     dataByCountry.set(d.country, d[valueField]);
   });
 
-  // Tooltip
+  // logica de hover 
   const tooltip = d3.select('body')
     .append('div')
     .attr('class', 'tooltip')
     .style('opacity', 0);
 
-  // Carrega dados do mundo usando TopoJSON local
+  // TopoJSON do mundo
   d3.json('./libs/countries-110m.json').then(function(world) {
     // Converte TopoJSON para GeoJSON
     const countries = topojson.feature(world, world.objects.countries);
 
-    // Ajusta a projeção para preencher todo o container
     projection.fitSize([width, height], countries);
-    console.log('Projection fitted to:', width, 'x', height);
-    console.log('Projection scale:', projection.scale());
-    console.log('Projection translate:', projection.translate());
 
-    // Mapeamento de nomes de países (TopoJSON para nomes em nossos dados)
+    // Nomes do dataset são diferentes dos do TOPO, faz um mapzinho
     const countryNameMap = {
       'United States of America': 'United States',
       'Russia': 'Russia',
@@ -146,136 +128,93 @@ function createChoropleth(selector = '.Map') {
       'W. Sahara': 'Western Sahara'
     };
 
-    // Armazena o mapeamento globalmente
-    globalCountryNameMap = countryNameMap;
-
-    // Desenha todos os países
     svg.selectAll('.country')
       .data(countries.features)
       .enter()
       .append('path')
       .attr('class', 'country')
-      .attr('d', path)
+      .attr('d', path) 
       .attr('fill', function(d) {
+        // Pega o nome do pais e os dados do tal
         const countryName = countryNameMap[d.properties.name] || d.properties.name;
         const countryValue = dataByCountry.get(countryName);
-        return countryValue ? colorScale(countryValue) : '#ccc';
+        return countryValue ? colorScale(countryValue) : '#ccc'; // Ve a hue do valor ou cinza se n tiver
       })
-      .attr('stroke', '#333')
-      .attr('stroke-width', 0.5)
-      .style('cursor', 'pointer')
+      .attr('stroke', '#333') 
+      .attr('stroke-width', 0.5) 
+      .style('cursor', 'pointer') // maozinha
+      // Hover 
       .on('mouseover', function(event, d) {
         d3.select(this).attr('stroke-width', 2);
         const countryName = countryNameMap[d.properties.name] || d.properties.name;
         const countryValue = dataByCountry.get(countryName);
         const value = countryValue || 'No data';
+
+        // Mostrar os dados no tooltip
         tooltip
           .style('opacity', 1)
           .html(`
             <strong>${countryName}</strong><br/>
             ${legendTitle}: ${typeof value === 'number' ? value.toFixed(selectedFilter === 'obesity-rate' ? 1 : 0) : value}${selectedFilter === 'obesity-rate' && typeof value === 'number' ? '%' : ''}
           `)
-          .style('left', (event.pageX + 10) + 'px')
+          .style('left', (event.pageX + 10) + 'px') 
           .style('top', (event.pageY - 10) + 'px');
       })
       .on('mouseout', function() {
-        d3.select(this).attr('stroke-width', 0.5);
-        tooltip.style('opacity', 0);
+        d3.select(this).attr('stroke-width', 0.5); // Reseta o outline 
+        tooltip.style('opacity', 0); 
       })
+      // Click pra selecionar/deselecionar pais
       .on('click', function(event, d) {
-        // Hide tooltip on click
-        tooltip.style('opacity', 0);
+        tooltip.style('opacity', 0); 
 
         const countryName = countryNameMap[d.properties.name] || d.properties.name;
-        const currentChoroplethSelection = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
+        const currentChoroplethSelection = window.getChoroplethSelectedCountries();
         const isCurrentlySelected = currentChoroplethSelection.includes(countryName);
 
         let newChoroplethSelection;
         if (isCurrentlySelected) {
-          // Remove da seleção
+          // Remove se ja ta selecionado
           newChoroplethSelection = currentChoroplethSelection.filter(c => c !== countryName);
         } else {
-          // Adiciona à seleção (máximo 5)
+          // deixa add até 5 paises
           if (currentChoroplethSelection.length < 5) {
             newChoroplethSelection = [...currentChoroplethSelection, countryName];
           } else {
-            // Remove o primeiro e adiciona o novo (FIFO) - mas não desmarca checkbox do removido
+            // FIFO remover o mais antigo
             newChoroplethSelection = [...currentChoroplethSelection.slice(1), countryName];
           }
 
-          // Marca checkbox do país adicionado (mas nunca desmarca)
+          // Marcar o checkbox do pais selecionado
           const countryCheckbox = d3.select(`#country-${countryName.replace(/\s+/g, '-')}`);
           if (!countryCheckbox.empty()) {
             countryCheckbox.property('checked', true);
           }
         }
 
-        // Atualiza estado global com nova seleção
-        if (window.updateGlobalState) {
-          // Atualiza também a lista de países selecionados nos checkboxes
-          const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
-            .map(checkbox => checkbox.value);
-          window.updateGlobalState({
-            choroplethSelectedCountries: newChoroplethSelection,
-            selectedCountries: selectedCountries
-          });
-        }
+        // Fazer update do GlobalState
+        const selectedCountries = window.getSelectedCountries();
+        window.updateGlobalState({
+          choroplethSelectedCountries: newChoroplethSelection,
+          selectedCountries: selectedCountries
+        });
       });
   }).catch(function(error) {
     console.error('Error loading world data:', error);
-    // Fallback para países de exemplo em caso de erro
-    drawExampleCountries();
   });
 
-  // Função para atualizar visual do país baseado nos dois tipos de seleção
-  function updateCountryVisual(countryElement, countryName) {
-    const selectedCountries = window.getSelectedCountries ? window.getSelectedCountries() : [];
-    const isCheckboxSelected = selectedCountries.includes(countryName);
-    const choroplethSelected = window.getChoroplethSelectedCountries ? window.getChoroplethSelectedCountries() : [];
-    const isChoroplethSelected = choroplethSelected.includes(countryName);
 
-    if (isChoroplethSelected) {
-      // Choropleth selection: same style as hover (stroke-width 2)
-      countryElement
-        .attr('stroke', '#ff0000')
-        .attr('stroke-width', 2)
-        .style('stroke-dasharray', 'none');
-    } else {
-      // Default gray outline (no special styling for checkbox-only selection)
-      countryElement
-        .attr('stroke', '#333')
-        .attr('stroke-width', 0.5)
-        .style('stroke-dasharray', 'none');
-    }
-  }
-
-  // Função para atualizar todos os países baseado nas duas listas de seleção
-  function updateAllCountryVisuals() {
-    if (globalSvg && globalCountryNameMap) {
-      globalSvg.selectAll('.country').each(function(d) {
-        const countryName = globalCountryNameMap[d.properties.name] || d.properties.name;
-        updateCountryVisual(d3.select(this), countryName);
-      });
-    }
-  }
-
-  // Exporta função para uso externo
-  window.updateMapSelection = updateAllCountryVisuals;
-
-  // Atualiza visuais iniciais baseado nos países já selecionados
-  setTimeout(updateAllCountryVisuals, 100); // Pequeno delay para garantir que os checkboxes estejam prontos
-
-  // Adiciona legenda - posicionada no canto inferior direito
-  const legendWidth = Math.min(200, width * 0.25);  // Máximo 25% da largura
+  // Legenda de cor
+  const legendWidth = Math.min(200, width * 0.25); 
   const legendHeight = 20;
-  const legendX = width - legendWidth - 20;
-  const legendY = height - 60;
+  const legendX = width - legendWidth - 20; 
+  const legendY = height - 60; 
 
   const legend = svg.append('g')
     .attr('class', 'legend')
     .attr('transform', `translate(${legendX}, ${legendY})`);
 
-  // Gradiente para a legenda
+  // Cria o gradiente da legenda
   const defs = svg.append('defs');
   const gradient = defs.append('linearGradient')
     .attr('id', 'legend-gradient')
@@ -284,16 +223,16 @@ function createChoropleth(selector = '.Map') {
     .attr('y1', '0%')
     .attr('y2', '0%');
 
-  // Adiciona cores do gradiente
+  // faz o actual gradiente
   const domain = colorScale.domain();
   gradient.append('stop')
     .attr('offset', '0%')
-    .attr('stop-color', colorScale(domain[0]));
+    .attr('stop-color', colorScale(domain[0])); 
   gradient.append('stop')
     .attr('offset', '100%')
     .attr('stop-color', colorScale(domain[1]));
 
-  // Retângulo da legenda
+  // cor da legenda 
   legend.append('rect')
     .attr('width', legendWidth)
     .attr('height', legendHeight)
@@ -301,7 +240,7 @@ function createChoropleth(selector = '.Map') {
     .attr('stroke', '#333')
     .attr('stroke-width', 1);
 
-  // Labels da legenda
+  // valor min da legenda 
   legend.append('text')
     .attr('x', 0)
     .attr('y', legendHeight + 15)
@@ -309,6 +248,7 @@ function createChoropleth(selector = '.Map') {
     .attr('font-size', '12px')
     .text(domain[0].toFixed(selectedFilter === 'obesity-rate' ? 1 : 0));
 
+  // valor max da legenda
   legend.append('text')
     .attr('x', legendWidth)
     .attr('y', legendHeight + 15)
@@ -316,7 +256,7 @@ function createChoropleth(selector = '.Map') {
     .attr('font-size', '12px')
     .text(domain[1].toFixed(selectedFilter === 'obesity-rate' ? 1 : 0));
 
-  // Título da legenda
+  // legenda
   legend.append('text')
     .attr('x', legendWidth / 2)
     .attr('y', -5)
@@ -326,19 +266,3 @@ function createChoropleth(selector = '.Map') {
     .text(legendTitle);
 }
 
-// Função para atualizar line chart quando um país é clicado
-function updateLineChartForCountry(countryName) {
-  // Desseleciona todos os países
-  d3.selectAll('#countryCheckboxes input[type="checkbox"]')
-    .property('checked', false);
-
-  // Seleciona apenas o país clicado
-  d3.select(`#country-${countryName.replace(/\s+/g, '-')}`)
-    .property('checked', true);
-
-  // Atualiza os gráficos
-  setCurrentData();
-  createScatterplot('.ScatterPlot');
-  createDonutChart('.DonutChart');
-  createLineChart('.LineChart');
-}
