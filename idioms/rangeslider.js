@@ -1,103 +1,88 @@
 function createYearRangeSlider() {
-  // Limpa o slider anterior para evitar sobreposições
   d3.select('#yearRangeSlider').selectAll('*').remove();
 
-  // Configuração das dimensões do slider
   const width = 300;
   const height = 60;
-  // Aumentar margin.bottom dá mais espaço para os rótulos dos anos
   const margin = { top: 10, right: 20, bottom: 30, left: 20 };
   const sliderWidth = width - margin.left - margin.right;
   const sliderHeight = height - margin.top - margin.bottom;
 
-  // Função para obter intervalo de anos baseado no filtro selecionado
+  // Função para determinar intervalo de anos baseado no filtro selecionado
   function getYearRange() {
     const selectedFilter = d3.select('#filterSelect').property('value');
     if (selectedFilter === 'obesity-rate') {
       return { min: 1990, max: 2022 }; // Dados de obesidade começam em 1990
     }
-    return { min: 1961, max: 2022 }; // Outros dados começam em 1961
+    return { min: 1961, max: 2022 };   // Outros dados começam em 1961
   }
 
-  // Intervalo de anos disponíveis baseado no filtro
   const yearRange = getYearRange();
   let minYear = yearRange.min;
   let maxYear = yearRange.max;
-  let startYear = minYear;
-  let endYear = maxYear;
-  let currentYear = maxYear; 
+  let startYear = minYear;    // Início do intervalo selecionado
+  let endYear = maxYear;      // Fim do intervalo selecionado
+  let currentYear = maxYear;  // Ano atual (círculo laranja) 
 
-  // Escala linear que mapeia anos para posições no slider
-  // domain() define o intervalo de dados (anos), range() as posições em pixels
+  // Escala linear para mapear anos para posições no slider
   const xScale = d3.scaleLinear()
     .domain([minYear, maxYear])
     .range([0, sliderWidth]);
 
-  // Cria o elemento SVG principal
   const svg = d3.select('#yearRangeSlider')
     .append('svg')
     .attr('width', width)
     .attr('height', height);
 
-  // Grupo principal com margens aplicadas
   const g = svg.append('g')
     .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
-  // Trilha principal do slider (linha cinza de fundo)
-  const track = g.append('rect')
+  // Trilha de fundo do slider (cinza)
+  g.append('rect')
     .attr('class', 'slider-track')
     .attr('x', 0)
-    .attr('y', sliderHeight / 2 - 2) // Centraliza verticalmente
+    .attr('y', sliderHeight / 2 - 2)
     .attr('width', sliderWidth)
-    .attr('height', 4) // Espessura da linha
-    .attr('fill', '#ddd') 
-    .attr('rx', 2); // Bordas arredondadas
+    .attr('height', 4)
+    .attr('fill', '#ddd')
+    .attr('rx', 2);
 
-  // Destaque do intervalo selecionado (linha azul entre as barras)
+  // Intervalo selecionado (azul) entre os dois handles
   const range = g.append('rect')
     .attr('class', 'slider-range')
     .attr('x', xScale(startYear))
     .attr('y', sliderHeight / 2 - 2)
     .attr('width', xScale(endYear) - xScale(startYear))
     .attr('height', 4)
-    .attr('fill', 'steelblue') 
+    .attr('fill', 'steelblue')
     .attr('rx', 2);
 
-  // Comportamento de arrastar para as barras retangulares (definir intervalo)
+  // Permite o range do drag
   const rangeDrag = d3.drag()
-    .on('start', function(event, d) {
-      // Muda a cor da borda quando começa a arrastar
-      d3.select(this).raise().attr('stroke', '#666');
+    .on('start', function() {
+      d3.select(this).raise().attr('stroke', '#666'); // Destaca handle sendo arrastado
     })
     .on('drag', function(event, d) {
-      // Limita o movimento dentro dos limites do slider
+      // Limita posição do mouse dentro dos limites do slider
       const x = Math.max(0, Math.min(sliderWidth, event.x));
-      const year = Math.round(xScale.invert(x)); // Converte posição para ano
+      const year = Math.round(xScale.invert(x));
 
-      let newYear = year;
-
-      // Impede que as barras se cruzem
+      // Atualiza início ou fim do intervalo baseado no tipo do handle
       if (d.type === 'start') {
-        // Barra de início não pode passar da barra de fim
-        newYear = Math.max(minYear, Math.min(year, endYear));
-        startYear = newYear;
+        startYear = Math.max(minYear, Math.min(year, endYear)); // Não pode passar do fim
         d.year = startYear;
+        d3.select(this).attr('x', xScale(startYear) - 8);
       } else {
-        // Barra de fim não pode ficar atrás da barra de início
-        newYear = Math.min(maxYear, Math.max(year, startYear));
-        endYear = newYear;
+        endYear = Math.min(maxYear, Math.max(year, startYear)); // Não pode ser menor que início
         d.year = endYear;
+        d3.select(this).attr('x', xScale(endYear) - 8);
       }
 
-      // Reposiciona a barra (- 8 para centralizar na posição do mouse)
-      d3.select(this).attr('x', xScale(newYear) - 8);
-
-      // Mantém o ano atual dentro do intervalo definido pelas barras
+      // Garante que o ano atual fica dentro do intervalo selecionado
       currentYear = Math.max(startYear, Math.min(endYear, currentYear));
 
       updateSlider();
 
-      // Atualiza estado global quando o intervalo muda
+      // Atualiza estado global com novos valores
       if (window.updateGlobalState) {
         window.updateGlobalState({
           currentYear: currentYear,
@@ -105,29 +90,27 @@ function createYearRangeSlider() {
         });
       }
     })
-    .on('end', function(event, d) {
-      // Restaura a cor da borda original
-      d3.select(this).attr('stroke', '#333');
+    .on('end', function() {
+      d3.select(this).attr('stroke', '#333'); // Remove destaque
     });
 
-  // Comportamento de arrastar para o círculo laranja (ano atual dos gráficos)
-  // Este círculo controla que ano é mostrado no scatter plot e donut chart
+  // Comportamento de drag para o círculo do ano atual (laranja)
   const currentYearDrag = d3.drag()
-    .on('start', function(event, d) {
-      // Muda a cor da borda quando começa a arrastar
-      d3.select(this).raise().attr('stroke', '#666');
+    .on('start', function() {
+      d3.select(this).raise().attr('stroke', '#666'); 
     })
-    .on('drag', function(event, d) {
+    .on('drag', function(event) {
+      // Limita posição do mouse dentro dos limites do slider
       const x = Math.max(0, Math.min(sliderWidth, event.x));
-      const year = Math.round(xScale.invert(x)); // Converte posição para ano
+      const year = Math.round(xScale.invert(x));
 
-      // Força o ano atual a ficar dentro do intervalo das barras
+      // Garante que o ano atual fica dentro do intervalo selecionado
       currentYear = Math.max(startYear, Math.min(endYear, year));
-      d3.select(this).attr('cx', xScale(currentYear)); // Reposiciona o círculo
+      d3.select(this).attr('cx', xScale(currentYear));
 
       updateSlider();
 
-      // Atualiza estado global quando o ano atual muda
+      // Atualiza estado global com novo ano atual
       if (window.updateGlobalState) {
         window.updateGlobalState({
           currentYear: currentYear,
@@ -135,144 +118,132 @@ function createYearRangeSlider() {
         });
       }
     })
-    .on('end', function(event, d) {
-      // Restaura a cor da borda original
-      d3.select(this).attr('stroke', '#333');
+    .on('end', function() {
+      d3.select(this).attr('stroke', '#333'); // Remove destaque
     });
 
-  // Cria as barras retangulares nas extremidades (controles de intervalo)
+  // Dados para os dois handles (início e fim do intervalo)
   const handleData = [
-    { type: 'start', year: startYear }, 
-    { type: 'end', year: endYear }     
+    { type: 'start', year: startYear },
+    { type: 'end', year: endYear }
   ];
 
-  const handles = g.selectAll('.handle')
+  // Cria handles retangulares para início e fim do intervalo
+  g.selectAll('.handle')
     .data(handleData)
     .enter()
     .append('rect')
     .attr('class', 'handle')
-    .attr('x', d => xScale(d.year) - 8) // -8 para centralizar (width/2)
-    .attr('y', sliderHeight / 2 - 10)   // -10 para centralizar verticalmente
-    .attr('width', 16)    
-    .attr('height', 20)   
+    .attr('x', d => xScale(d.year) - 8)  // Centraliza handle na posição
+    .attr('y', sliderHeight / 2 - 10)
+    .attr('width', 16)
+    .attr('height', 20)
     .attr('fill', '#fff')
-    .attr('stroke', '#333') 
-    .attr('stroke-width', 2) 
-    .attr('rx', 3) // Arredondamento das bordas
-    .style('cursor', 'ew-resize') // Cursor de redimensionamento horizontal
-    .call(rangeDrag); // Aplica o comportamento de arrastar
-
-  // Cria o círculo laranja para seleção do ano atual (afeta os gráficos)
+    .attr('stroke', '#333')
+    .attr('stroke-width', 2)
+    .attr('rx', 3)                       
+    .style('cursor', 'ew-resize')        
+    .call(rangeDrag);                    
+    
+  // Círculo laranja para o ano atual
   const currentYearCircle = g.append('circle')
     .attr('class', 'current-year-circle')
-    .attr('cx', xScale(currentYear)) // Posição horizontal baseada no ano
-    .attr('cy', sliderHeight / 2)    // Centralizado verticalmente
-    .attr('r', 10)         
+    .attr('cx', xScale(currentYear))
+    .attr('cy', sliderHeight / 2)
+    .attr('r', 10)
     .attr('fill', 'orange')
-    .attr('stroke', '#333') 
-    .attr('stroke-width', 2) 
-    .style('cursor', 'ew-resize') // Cursor de redimensionamento
-    .call(currentYearDrag); // Aplica o comportamento de arrastar
+    .attr('stroke', '#333')
+    .attr('stroke-width', 2)
+    .style('cursor', 'ew-resize')
+    .call(currentYearDrag);              // Aplica comportamento de drag
 
-  // Alterar o terceiro parâmetro (10) muda o intervalo entre marcas
+  // Cria marcações de anos de 10 em 10 anos
   const tickYears = d3.range(minYear, maxYear + 1, 10);
-  g.selectAll('.tick')
+  const ticks = g.selectAll('.tick')
     .data(tickYears)
-    .enter()
-    .append('line')
+    .enter();
+
+  ticks.append('line')
     .attr('class', 'tick')
-    .attr('x1', d => xScale(d)) // Posição horizontal da marca
+    .attr('x1', d => xScale(d))
     .attr('x2', d => xScale(d))
-    .attr('y1', sliderHeight / 2 + 6)  
-    .attr('y2', sliderHeight / 2 + 12) 
-    .attr('stroke', '#666') 
-    .attr('stroke-width', 1); 
+    .attr('y1', sliderHeight / 2 + 6)
+    .attr('y2', sliderHeight / 2 + 12)
+    .attr('stroke', '#666')
+    .attr('stroke-width', 1);
 
-  // Rótulos dos anos 
-  g.selectAll('.tick-label')
-    .data(tickYears)
-    .enter()
-    .append('text')
+  // Labels dos anos nas marcações
+  ticks.append('text')
     .attr('class', 'tick-label')
-    .attr('x', d => xScale(d)) // Posição horizontal do texto
-    .attr('y', sliderHeight / 2 + 25) // Posição vertical (abaixo das marcas)
-    .attr('text-anchor', 'middle') // Centraliza o texto
-    .attr('font-size', '10px') 
-    .attr('fill', '#666') 
-    .text(d => d); // Mostra o ano
+    .attr('x', d => xScale(d))
+    .attr('y', sliderHeight / 2 + 25)
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '10px')
+    .attr('fill', '#666')
+    .text(d => d);
 
-  // Exibição do ano atual e intervalo (texto abaixo do slider)
+  // Display de texto mostrando ano atual e intervalo selecionado
   const yearDisplay = d3.select('#yearRangeSlider')
     .append('div')
-    .style('text-align', 'center') // Centraliza o texto
-    .style('margin-top', '0px')    // Remove espaço acima do texto para alinhar
+    .style('text-align', 'center')
+    .style('margin-top', '0px')
     .style('font-size', '14px')
     .style('font-weight', 'bold')
     .text(`Current Year: ${currentYear} | Range: ${startYear} - ${endYear}`);
 
+  // Função para atualizar elementos visuais quando valores mudam
   function updateSlider() {
-    // Atualiza a barra azul de destaque do intervalo
+    // Atualiza largura e posição do intervalo azul
     range
       .attr('x', xScale(startYear))
       .attr('width', xScale(endYear) - xScale(startYear));
 
-    // Reposiciona o círculo laranja
+    // Atualiza posição do círculo do ano atual
     currentYearCircle.attr('cx', xScale(currentYear));
 
-    // Atualiza o texto informativo
+    // Atualiza texto de display
     yearDisplay.text(`Current Year: ${currentYear} | Range: ${startYear} - ${endYear}`);
   }
 
-  function updateVisualization() {
-    setCurrentData();
-    createChoropleth();
-    createScatterplot();
-    createDonutChart();
-    createLineChart();
-  }
-
-  // Função para atualizar o slider quando o filtro muda
+  // Função para atualizar slider quando filtro muda (obesidade vs outros dados)
   function updateSliderForFilter() {
-    const newYearRange = getYearRange();
-    const newMinYear = newYearRange.min;
-    const newMaxYear = newYearRange.max;
+    const { min: newMinYear, max: newMaxYear } = getYearRange();
 
-    // Atualiza as variáveis globais
+    // Atualiza limites do slider
     minYear = newMinYear;
     maxYear = newMaxYear;
 
-    // Ajusta startYear e endYear se estiverem fora do novo intervalo
+    // Ajusta valores atuais para ficarem dentro dos novos limites
     if (startYear < newMinYear) startYear = newMinYear;
     if (endYear > newMaxYear) endYear = newMaxYear;
     if (currentYear < newMinYear) currentYear = newMinYear;
     if (currentYear > newMaxYear) currentYear = newMaxYear;
 
-    // Atualiza a escala
+    // Atualiza escala com novo domínio
     xScale.domain([newMinYear, newMaxYear]);
 
-    // Reposiciona elementos do slider
+    // Atualiza posições dos handles
     d3.selectAll('.handle')
       .attr('x', d => xScale(d.type === 'start' ? startYear : endYear) - 8);
 
+    // Atualiza posição do círculo
     currentYearCircle.attr('cx', xScale(currentYear));
 
-    // Atualiza a trilha de destaque
+    // Atualiza intervalo azul
     range
       .attr('x', xScale(startYear))
       .attr('width', xScale(endYear) - xScale(startYear));
 
-    // Atualiza marcas e rótulos
+    // Recria marcações de anos para novo intervalo
     const newTickYears = d3.range(newMinYear, newMaxYear + 1, 10);
 
-    // Remove marcas antigas
-    g.selectAll('.tick').remove();
-    g.selectAll('.tick-label').remove();
+    g.selectAll('.tick, .tick-label').remove();
 
-    // Adiciona novas marcas
-    g.selectAll('.tick')
+    const ticks = g.selectAll('.tick')
       .data(newTickYears)
-      .enter()
-      .append('line')
+      .enter();
+
+    ticks.append('line')
       .attr('class', 'tick')
       .attr('x1', d => xScale(d))
       .attr('x2', d => xScale(d))
@@ -281,11 +252,7 @@ function createYearRangeSlider() {
       .attr('stroke', '#666')
       .attr('stroke-width', 1);
 
-    // Adiciona novos rótulos
-    g.selectAll('.tick-label')
-      .data(newTickYears)
-      .enter()
-      .append('text')
+    ticks.append('text')
       .attr('class', 'tick-label')
       .attr('x', d => xScale(d))
       .attr('y', sliderHeight / 2 + 25)
@@ -297,7 +264,7 @@ function createYearRangeSlider() {
     updateSlider();
   }
 
-  // Funções exportadas para uso por outros componentes (nomes únicos para evitar conflitos)
+  // Funções globais para acesso externo aos valores do slider
   window.getRangeSliderYearRange = function() {
     return { start: startYear, end: endYear };
   };
@@ -306,5 +273,6 @@ function createYearRangeSlider() {
     return currentYear;
   };
 
+  // Expõe função para atualizar slider quando filtro muda
   window.updateSliderForFilter = updateSliderForFilter;
 }
