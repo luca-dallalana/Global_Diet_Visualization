@@ -132,7 +132,7 @@ function createScatterplot(selector = '#scatterplot') {
     .attr('class', 'circle')
     .attr('cx', d => xScale(d.x))
     .attr('cy', d => yScale(d.y))
-    .each(function() {
+    .each(function(d) {
       const choroplethSelected = window.getChoroplethSelectedCountries();
       const isChoroplethSelected = choroplethSelected.includes(d.country);
 
@@ -158,13 +158,13 @@ function createScatterplot(selector = '#scatterplot') {
         .style('left', (event.pageX + 10) + 'px')
         .style('top', (event.pageY - 10) + 'px');
     })
-    .on('mouseout', function(d) {
+    .on('mouseout', function(event, d) {
       const choroplethSelected = window.getChoroplethSelectedCountries();
       const isChoroplethSelected = choroplethSelected.includes(d.country);
       d3.select(this).attr('r', isChoroplethSelected ? 7 : 5);
       tooltip.style('opacity', 0);
     })
-    .on('click', function(d) {
+    .on('click', function(event, d) {
       // Hide tooltip on click
       tooltip.style('opacity', 0);
 
