@@ -52,7 +52,7 @@ async function loadData() {
     }));
 
     populateFilters();
-    setCurrentData();
+    setInitialData();
     createChoropleth('.Map');
     createScatterplot('.ScatterPlot');
     createDonutChart('.DonutChart');
@@ -176,7 +176,7 @@ function updateAllIdioms() {
   createLineChart('.LineChart');
 }
 
-function setCurrentData() {
+function setInitialData() {
   globalState.selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
     .map(checkbox => checkbox.value);
 
