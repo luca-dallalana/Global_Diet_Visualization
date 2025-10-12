@@ -220,8 +220,8 @@ function createScatterplot(selector = '#scatterplot') {
 
     svg.append('text')
       .attr('class', 'regression-info')
-      .attr('x', config.width - config.margin.right - 10)
-      .attr('y', config.margin.top + 20)
+      .attr('x', config.width - 10)
+      .attr('y', 15)
       .attr('text-anchor', 'end')
       .text(`R² = ${regression.rSquared.toFixed(3)}`);
   }
