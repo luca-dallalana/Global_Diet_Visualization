@@ -165,7 +165,6 @@ function createScatterplot(selector = '#scatterplot') {
       tooltip.style('opacity', 0);
     })
     .on('click', function(event, d) {
-      // Hide tooltip on click
       tooltip.style('opacity', 0);
 
       const countryName = d.country;
@@ -177,7 +176,7 @@ function createScatterplot(selector = '#scatterplot') {
         // Remove da seleção
         newChoroplethSelection = currentChoroplethSelection.filter(c => c !== countryName);
       } else {
-        // Adiciona à seleção (máximo 5)
+        // Adiciona à seleção no mac 5
         if (currentChoroplethSelection.length < 5) {
           newChoroplethSelection = [...currentChoroplethSelection, countryName];
         } else {

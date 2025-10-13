@@ -1,5 +1,4 @@
 function createLineChart(selector = '#linechart') {
-  // Limpa o gráfico anterior para evitar sobreposições
   const container = selector.startsWith('.') ? d3.select(selector).select('#linechart') : d3.select(selector);
   container.selectAll('*').remove();
 

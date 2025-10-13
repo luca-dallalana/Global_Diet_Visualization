@@ -105,10 +105,6 @@ function populateCountryCheckboxes(countries, preserveSelections = false) {
       return true;
     })
     .on('change', function() {
-      const countryName = this.value;
-      const isChecked = this.checked;
-
-
       const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
         .map(checkbox => checkbox.value);
 
@@ -244,7 +240,7 @@ function setupEventListeners() {
     populateCountryCheckboxes(filteredCountries, true);
   });
 
-    // Atualiza quando alguém escolhe o pais na checkbox
+    // Atualiza quando alguém escolhe todos na checkbox
   d3.select('#selectAllCountries').on('click', function() {
     d3.selectAll('#countryCheckboxes input[type="checkbox"]')
       .property('checked', true);
@@ -255,7 +251,7 @@ function setupEventListeners() {
     updateGlobalState({ selectedCountries: selectedCountries });
   });
 
-    // Atualiza quando alguém da unselect do pais na checkbox
+    // Atualiza quando alguém da unselect de todos na checkbox
   d3.select('#clearAllCountries').on('click', function() {
     d3.selectAll('#countryCheckboxes input[type="checkbox"]')
       .property('checked', false);

@@ -77,7 +77,6 @@ function createChoropleth(selector = '.Map') {
     dataByCountry.set(d.country, d[valueField]);
   });
 
-  // logica de hover 
   const tooltip = d3.select('body')
     .append('div')
     .attr('class', 'tooltip')
@@ -141,13 +140,13 @@ function createChoropleth(selector = '.Map') {
         return countryValue ? colorScale(countryValue) : '#ccc'; // Ve a hue do valor ou cinza se n tiver
       })
       .attr('stroke', function(d) {
-        // Red outline for selected countries
+        // Vermelho pra paises selecionados
         const countryName = countryNameMap[d.properties.name] || d.properties.name;
         const choroplethSelected = window.getChoroplethSelectedCountries();
         return choroplethSelected.includes(countryName) ? '#ff0000' : '#333';
       })
       .attr('stroke-width', function(d) {
-        // Thicker outline for selected countries
+        // outline
         const countryName = countryNameMap[d.properties.name] || d.properties.name;
         const choroplethSelected = window.getChoroplethSelectedCountries();
         return choroplethSelected.includes(countryName) ? 2 : 0.5;
@@ -214,7 +213,6 @@ function createChoropleth(selector = '.Map') {
   });
 
 
-  // Legenda de cor com buckets
   const legendWidth = Math.min(200, width * 0.25);
   const legendHeight = 20;
   const legendX = width - legendWidth - 20;
@@ -224,7 +222,7 @@ function createChoropleth(selector = '.Map') {
     .attr('class', 'legend')
     .attr('transform', `translate(${legendX}, ${legendY})`);
 
-  // Cria buckets discretos baseados no domínio
+  // Cria buckets 
   const domain = colorScale.domain();
   const numBuckets = 5;
   const bucketWidth = legendWidth / numBuckets;

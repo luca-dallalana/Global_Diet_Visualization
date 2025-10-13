@@ -21,7 +21,7 @@ function createYearRangeSlider() {
   let maxYear = yearRange.max;
   let startYear = minYear;    // Início do intervalo selecionado
   let endYear = maxYear;      // Fim do intervalo selecionado
-  let currentYear = maxYear;  // Ano atual (círculo laranja) 
+  let currentYear = maxYear;  // Ano atual 
 
   // Escala linear para mapear anos para posições no slider
   const xScale = d3.scaleLinear()
@@ -144,7 +144,7 @@ function createYearRangeSlider() {
     .attr('rx', 3)                       
     .style('cursor', 'ew-resize')        
     .call(rangeDrag);                    
-    
+
   // Círculo laranja para o ano atual
   const currentYearCircle = g.append('circle')
     .attr('class', 'current-year-circle')

@@ -75,7 +75,6 @@ function createDonutChart(selector = '#donutchart') {
     .style('color', '#333')
     .text(`Total: ${totalCalories.toFixed(0)} calories`);
 
-  // Cria o elemento SVG principal
   const svg = container
     .append('svg')
     .attr('width', width)
@@ -83,7 +82,6 @@ function createDonutChart(selector = '#donutchart') {
     .style('margin-left', '70px')      // Centraliza o gráfico
     .style('margin-top', '10px');
 
-  // Grupo principal centrado no SVG
   const g = svg.append('g')
     .attr('transform', `translate(${width / 2}, ${height / 2})`);
 
