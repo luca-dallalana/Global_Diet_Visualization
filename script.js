@@ -23,7 +23,7 @@ function getChartConfig() {
 
 // Cores para destacar países selecionados
 function getCountryHighlightColors() {
-  return ['#a6611a', '#dfc27d', '#f5f5f5', '#80cdc1', '#018571'];
+  return ['#e41a1c', '#ffff00', '#4daf4a', '#e7298a', '#ff7f00'];
 }
 
 // Função para obter cor de um país selecionado

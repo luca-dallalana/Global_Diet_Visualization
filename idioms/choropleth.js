@@ -43,7 +43,7 @@ function createChoropleth(selector = '.Map') {
     case 'obesity-rate':
       mapData = obesityData.filter(d => d.year === currentYear);
       valueField = 'obesity';
-      colorScale = d3.scaleSequential(d3.interpolateReds)
+      colorScale = d3.scaleSequential(d3.interpolateBlues)
         .domain(d3.extent(mapData, d => d.obesity));
       legendTitle = 'Obesity Rate (%)';
       break;
@@ -54,29 +54,21 @@ function createChoropleth(selector = '.Map') {
           value: (d.animalProtein || 0) + (d.vegetalProtein || 0)
         }));
       valueField = 'value';
-      colorScale = d3.scaleOrdinal()
-        .domain(d3.extent(mapData, d => d.value))
-        .range(['#f1eef6', '#d7b5d8', '#df65b0', '#dd1c77', '#980043']);
-
-      // Convert to sequential scale for proper interpolation
-      const proteinExtent = d3.extent(mapData, d => d.value);
-      colorScale = d3.scaleQuantize()
-        .domain(proteinExtent)
-        .range(['#f1eef6', '#d7b5d8', '#df65b0', '#dd1c77', '#980043']);
-
+      colorScale = d3.scaleSequential(d3.interpolateBlues)
+        .domain(d3.extent(mapData, d => d.value));
       legendTitle = 'Protein Calories';
       break;
     case 'carbs-calories':
       mapData = macronutrientData.filter(d => d.year === currentYear);
       valueField = 'carbohydrates';
-      colorScale = d3.scaleSequential(d3.interpolateOranges)
+      colorScale = d3.scaleSequential(d3.interpolateBlues)
         .domain(d3.extent(mapData, d => d.carbohydrates));
       legendTitle = 'Carbohydrate Calories';
       break;
     case 'fat-calories':
       mapData = macronutrientData.filter(d => d.year === currentYear);
       valueField = 'fat';
-      colorScale = d3.scaleSequential(d3.interpolatePurples)
+      colorScale = d3.scaleSequential(d3.interpolateBlues)
         .domain(d3.extent(mapData, d => d.fat));
       legendTitle = 'Fat Calories';
       break;
