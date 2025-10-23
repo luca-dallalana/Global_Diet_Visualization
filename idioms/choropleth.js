@@ -54,8 +54,16 @@ function createChoropleth(selector = '.Map') {
           value: (d.animalProtein || 0) + (d.vegetalProtein || 0)
         }));
       valueField = 'value';
-      colorScale = d3.scaleSequential(d3.interpolateGreens)
-        .domain(d3.extent(mapData, d => d.value));
+      colorScale = d3.scaleOrdinal()
+        .domain(d3.extent(mapData, d => d.value))
+        .range(['#f1eef6', '#d7b5d8', '#df65b0', '#dd1c77', '#980043']);
+
+      // Convert to sequential scale for proper interpolation
+      const proteinExtent = d3.extent(mapData, d => d.value);
+      colorScale = d3.scaleQuantize()
+        .domain(proteinExtent)
+        .range(['#f1eef6', '#d7b5d8', '#df65b0', '#dd1c77', '#980043']);
+
       legendTitle = 'Protein Calories';
       break;
     case 'carbs-calories':
@@ -144,12 +152,12 @@ function createChoropleth(selector = '.Map') {
       .attr('stroke', function(d) {
         const countryName = countryNameMap[d.properties.name] || d.properties.name;
         const choroplethSelected = window.getChoroplethSelectedCountries();
-        return choroplethSelected.includes(countryName) ? '#ff0000' : '#333';
+        return choroplethSelected.includes(countryName) ? window.getCountryColor(countryName) : '#333';
       })
       .attr('stroke-width', function(d) {
         const countryName = countryNameMap[d.properties.name] || d.properties.name;
         const choroplethSelected = window.getChoroplethSelectedCountries();
-        return choroplethSelected.includes(countryName) ? 2 : 0.5;
+        return choroplethSelected.includes(countryName) ? 3 : 0.5;
       });
   }
 
@@ -209,7 +217,7 @@ function createChoropleth(selector = '.Map') {
           const currentElement = d3.select(this);
           const originalStrokeWidth = currentElement.attr('stroke-width');
           currentElement.attr('data-original-stroke-width', originalStrokeWidth);
-          currentElement.attr('stroke-width', 2);
+          currentElement.attr('stroke-width', 3);
 
           const countryName = countryNameMap[d.properties.name] || d.properties.name;
           const countryValue = dataByCountry.get(countryName);

@@ -35,9 +35,9 @@ function createDonutChart(selector = '#donutchart') {
 
   // Mapzinho de cores
   const donutData = [
-    { name: 'Carbohydrates', value: avgCarbohydrates, color: '#ff7f0e' }, 
-    { name: 'Fats', value: avgFat, color: '#2ca02c' },                    
-    { name: 'Proteins', value: totalProtein, color: '#1f77b4' }           
+    { name: 'Carbohydrates', value: avgCarbohydrates, color: '#a6611a' },
+    { name: 'Fats', value: avgFat, color: '#dfc27d' },
+    { name: 'Proteins', value: totalProtein, color: '#018571' }
   ];
 
   const width = 220;
@@ -142,21 +142,21 @@ function createDonutChart(selector = '#donutchart') {
     .attr('y', -20)
     .style('font-size', '12px')
     .style('font-weight', 'bold')
-    .style('fill', '#ff7f0e')
+    .style('fill', '#a6611a')
     .text(`Carbs: ${avgCarbohydrates.toFixed(0)}`);
 
   centerG.append('text')
     .attr('y', 0)
     .style('font-size', '12px')
     .style('font-weight', 'bold')
-    .style('fill', '#2ca02c')
+    .style('fill', '#dfc27d')
     .text(`Fats: ${avgFat.toFixed(0)}`);
 
   centerG.append('text')
     .attr('y', 20)
     .style('font-size', '12px')
     .style('font-weight', 'bold')
-    .style('fill', '#1f77b4')
+    .style('fill', '#018571')
     .text(`Proteins: ${totalProtein.toFixed(0)}`);
 
 }

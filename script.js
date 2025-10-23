@@ -21,6 +21,19 @@ function getChartConfig() {
   };
 }
 
+// Cores para destacar países selecionados
+function getCountryHighlightColors() {
+  return ['#a6611a', '#dfc27d', '#f5f5f5', '#80cdc1', '#018571'];
+}
+
+// Função para obter cor de um país selecionado
+function getCountryColor(country) {
+  const selectedCountries = window.getChoroplethSelectedCountries();
+  const colors = getCountryHighlightColors();
+  const index = selectedCountries.indexOf(country);
+  return index >= 0 ? colors[index] : '#ff0000'; // fallback to red if not found
+}
+
 // Carregar dados dos csvs e criar o primeiro estado da vis
 async function loadData() {
   try {

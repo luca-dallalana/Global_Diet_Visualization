@@ -202,8 +202,8 @@ function createScatterplot(selector = '#scatterplot') {
 
       d3.select(this)
         .attr('r', isChoroplethSelected ? 7 : 5)
-        .attr('fill', isChoroplethSelected ? '#ff4444' : pointColor)
-        .attr('stroke', isChoroplethSelected ? '#ff0000' : 'none')
+        .attr('fill', isChoroplethSelected ? window.getCountryColor(d.country) : pointColor)
+        .attr('stroke', isChoroplethSelected ? window.getCountryColor(d.country) : 'none')
         .attr('stroke-width', isChoroplethSelected ? 2 : 0)
         .style('opacity', isChoroplethSelected ? 1 : 0.8);
     })
@@ -397,7 +397,7 @@ function createScatterplot(selector = '#scatterplot') {
             d3.select(this)
               .attr('opacity', isChoroplethSelected ? 1 : 0.8)
               .attr('stroke-width', isChoroplethSelected ? 2 : 0)
-              .attr('stroke', isChoroplethSelected ? '#ff0000' : 'none');
+              .attr('stroke', isChoroplethSelected ? window.getCountryColor(d.country) : 'none');
           });
       }
 

@@ -125,7 +125,7 @@ function createLineChart(selector = '#linechart') {
     svg.append('path')
       .datum(sortedData)
       .attr('fill', 'none')
-      .attr('stroke', isChoroplethSelected ? d3.color(colorScale(country)).brighter(0.5) : colorScale(country))
+      .attr('stroke', isChoroplethSelected ? window.getCountryColor(country) : colorScale(country))
       .attr('stroke-width', isChoroplethSelected ? 4 : 2)
       .attr('d', line);
 
@@ -138,7 +138,7 @@ function createLineChart(selector = '#linechart') {
       .attr('cx', d => xScale(d.year))
       .attr('cy', d => yScale(d.value))
       .attr('r', isChoroplethSelected ? 4 : 3)
-      .attr('fill', isChoroplethSelected ? d3.color(colorScale(country)).brighter(0.5) : colorScale(country))
+      .attr('fill', isChoroplethSelected ? window.getCountryColor(country) : colorScale(country))
       .on('mouseover', function(event, d) {
         d3.select(this).attr('r', isChoroplethSelected ? 6 : 5);
         tooltip
@@ -192,6 +192,7 @@ function createLineChart(selector = '#linechart') {
 
   let legendY = 0;
   dataByCountry.forEach((countryData, country) => {
+    const isChoroplethSelected = choroplethSelected.includes(country);
     const legendItem = legend.append('g')
       .attr('transform', `translate(0, ${legendY})`);
 
@@ -200,14 +201,15 @@ function createLineChart(selector = '#linechart') {
       .attr('x2', 15)
       .attr('y1', 0)
       .attr('y2', 0)
-      .attr('stroke', colorScale(country))
-      .attr('stroke-width', 2);
+      .attr('stroke', isChoroplethSelected ? window.getCountryColor(country) : colorScale(country))
+      .attr('stroke-width', isChoroplethSelected ? 3 : 2);
 
     legendItem.append('text')
       .attr('x', 20)
       .attr('y', 0)
       .attr('dy', '0.35em')
       .style('font-size', '10px')
+      .style('font-weight', isChoroplethSelected ? 'bold' : 'normal')
       .text(country.length > 12 ? country.substring(0, 12) + '...' : country);
 
     legendY += 15;
