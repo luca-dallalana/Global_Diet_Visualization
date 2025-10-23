@@ -67,6 +67,70 @@ function prepareScatterplotData() {
   );
 }
 
+function prepareScatterplotDataForBrushing() {
+  const dataType = window.getSelectedDataType();
+  const currentYear = window.getCurrentYear();
+
+  // Usa getters pra aceder ao GlobalState
+  const caloriesGdpData = window.getCaloriesGdpData();
+  const obesityData = window.getObesityData();
+
+  let baseData = [];
+
+  // Prepara dados baseado no tipo selecionado no dropdown
+  switch(dataType) {
+    case 'calories-gdp':
+      baseData = caloriesGdpData.map(d => ({
+        ...d,
+        x: d.gdp,
+        y: d.calories,
+        xLabel: 'GDP per Capita ($)',
+        yLabel: 'Daily Calories'
+      }));
+      break;
+    case 'obesity-gdp':
+      obesityData.forEach(obesityRecord => {
+        const gdpRecord = caloriesGdpData.find(gdp =>
+          gdp.country === obesityRecord.country && gdp.year === obesityRecord.year
+        );
+        if (gdpRecord) {
+          baseData.push({
+            country: obesityRecord.country,
+            year: obesityRecord.year,
+            x: gdpRecord.gdp,
+            y: obesityRecord.obesity,
+            xLabel: 'GDP per Capita ($)',
+            yLabel: 'Obesity Rate (%)'
+          });
+        }
+      });
+      break;
+    case 'calories-obesity':
+      caloriesGdpData.forEach(caloriesRecord => {
+        const obesityRecord = obesityData.find(obesity =>
+          obesity.country === caloriesRecord.country && obesity.year === caloriesRecord.year
+        );
+        if (obesityRecord) {
+          baseData.push({
+            country: caloriesRecord.country,
+            year: caloriesRecord.year,
+            x: caloriesRecord.calories,
+            y: obesityRecord.obesity,
+            xLabel: 'Daily Calories',
+            yLabel: 'Obesity Rate (%)'
+          });
+        }
+      });
+      break;
+  }
+
+  // Aplica filtros de ano mas INCLUI TODOS OS PAÍSES para brushing
+  return baseData.filter(d =>
+    d.year === currentYear &&
+    !isNaN(d.x) && !isNaN(d.y)
+  );
+}
+
 function createScatterplot(selector = '#scatterplot') {
   const container = selector.startsWith('.') ? d3.select(selector).select('#scatterplot') : d3.select(selector);
   container.selectAll('*').remove();
@@ -234,12 +298,12 @@ function createScatterplot(selector = '#scatterplot') {
   const yAxis = d3.axisLeft(yScale).ticks(6);
 
   svg.append('g')
-    .attr('class', 'axis')
+    .attr('class', 'x-axis axis')
     .attr('transform', `translate(0,${config.height - config.margin.bottom})`)
     .call(xAxis);
 
   svg.append('g')
-    .attr('class', 'axis')
+    .attr('class', 'y-axis axis')
     .attr('transform', `translate(${config.margin.left},0)`)
     .call(yAxis);
 
@@ -262,6 +326,168 @@ function createScatterplot(selector = '#scatterplot') {
     .attr('y', 12)
     .attr('text-anchor', 'middle')
     .text(scatterplotData[0]?.yLabel || 'Y Axis');
+
+  // Add brush functionality
+  const brush = d3.brush()
+    .extent([[config.margin.left, config.margin.top], [config.width - config.margin.right, config.height - config.margin.bottom]])
+    .on('start brush end', function(event) {
+      const selection = event.selection;
+
+      if (selection) {
+        // Get brush coordinates
+        const [[x0, y0], [x1, y1]] = selection;
+
+        // Convert to data coordinates
+        const xMin = xScale.invert(x0);
+        const xMax = xScale.invert(x1);
+        const yMin = yScale.invert(y1); // Note: y1 is top, y0 is bottom due to SVG coordinate system
+        const yMax = yScale.invert(y0);
+
+        // Get all data points (not just selected countries) for brushing
+        const allData = prepareScatterplotDataForBrushing();
+
+        // Find points within brush selection from all available data
+        const brushedCountries = new Set();
+        allData.forEach(d => {
+          if (d.x >= xMin && d.x <= xMax && d.y >= yMin && d.y <= yMax) {
+            brushedCountries.add(d.country);
+          }
+        });
+
+        // Update point styling - only visible points can be styled
+        svg.selectAll('.circle')
+          .attr('opacity', d => {
+            const isInBrush = d.x >= xMin && d.x <= xMax && d.y >= yMin && d.y <= yMax;
+            return isInBrush ? 1 : 0.3;
+          })
+          .attr('stroke-width', d => {
+            const isInBrush = d.x >= xMin && d.x <= xMax && d.y >= yMin && d.y <= yMax;
+            return isInBrush ? 2 : 0;
+          })
+          .attr('stroke', d => {
+            const isInBrush = d.x >= xMin && d.x <= xMax && d.y >= yMin && d.y <= yMax;
+            return isInBrush ? '#ff6600' : 'none';
+          });
+
+      } else {
+        // No selection - reset all points to normal styling
+        svg.selectAll('.circle')
+          .each(function(d) {
+            const choroplethSelected = window.getChoroplethSelectedCountries();
+            const isChoroplethSelected = choroplethSelected.includes(d.country);
+
+            d3.select(this)
+              .attr('opacity', isChoroplethSelected ? 1 : 0.8)
+              .attr('stroke-width', isChoroplethSelected ? 2 : 0)
+              .attr('stroke', isChoroplethSelected ? '#ff0000' : 'none');
+          });
+      }
+
+    });
+
+  // Add zoom functionality
+  const zoom = d3.zoom()
+    .scaleExtent([0.5, 10])
+    .extent([[config.margin.left, config.margin.top], [config.width - config.margin.right, config.height - config.margin.bottom]])
+    .filter(function(event) {
+      // Allow zoom only with wheel events or when shift key is pressed
+      return event.type === 'wheel' || event.shiftKey;
+    })
+    .on('zoom', function(event) {
+      const transform = event.transform;
+
+      // Create new scales based on zoom transform with capping at 0
+      let newXScale = transform.rescaleX(xScale);
+      let newYScale = transform.rescaleY(yScale);
+
+      // Cap domains at 0 (no negative values)
+      const xDomain = newXScale.domain();
+      const yDomain = newYScale.domain();
+
+      if (xDomain[0] < 0) {
+        const cappedXDomain = [0, xDomain[1]];
+        newXScale = newXScale.copy().domain(cappedXDomain);
+      }
+
+      if (yDomain[0] < 0) {
+        const cappedYDomain = [0, yDomain[1]];
+        newYScale = newYScale.copy().domain(cappedYDomain);
+      }
+
+      // Update axes with new scales
+      const newXAxis = isGdpOnX ?
+        d3.axisBottom(newXScale)
+          .tickValues([250, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000].filter(d => {
+            const domain = newXScale.domain();
+            return d >= domain[0] && d <= domain[1];
+          }))
+          .tickFormat(d => d < 1000 ? d.toString() : (d / 1000) + 'k') :
+        d3.axisBottom(newXScale).ticks(6);
+
+      const newYAxis = d3.axisLeft(newYScale).ticks(6);
+
+      svg.select('.x-axis').call(newXAxis);
+      svg.select('.y-axis').call(newYAxis);
+
+      // Get current visible domains
+      const visibleXDomain = newXScale.domain();
+      const visibleYDomain = newYScale.domain();
+
+      // Update circle positions and visibility
+      svg.selectAll('.circle')
+        .attr('cx', d => newXScale(d.x))
+        .attr('cy', d => newYScale(d.y))
+        .style('display', d => {
+          // Hide points that are outside the current zoom domain
+          const isVisible = d.x >= visibleXDomain[0] && d.x <= visibleXDomain[1] &&
+                           d.y >= visibleYDomain[0] && d.y <= visibleYDomain[1];
+          return isVisible ? 'block' : 'none';
+        });
+
+      // Update regression line if it exists
+      const regressionLine = svg.select('.regression-line');
+      if (!regressionLine.empty()) {
+        // Filter regression line data to only include visible points
+        const visibleData = scatterplotData.filter(d =>
+          d.x >= visibleXDomain[0] && d.x <= visibleXDomain[1] &&
+          d.y >= visibleYDomain[0] && d.y <= visibleYDomain[1]
+        );
+
+        if (visibleData.length >= 2) {
+          const visibleRegression = calculateLinearRegression(visibleData);
+          if (visibleRegression) {
+            const xMin = Math.max(d3.min(visibleData, d => d.x), visibleXDomain[0]);
+            const xMax = Math.min(d3.max(visibleData, d => d.x), visibleXDomain[1]);
+            const lineData = [
+              { x: xMin, y: visibleRegression.slope * xMin + visibleRegression.intercept },
+              { x: xMax, y: visibleRegression.slope * xMax + visibleRegression.intercept }
+            ];
+
+            regressionLine.attr('d', d3.line()
+              .x(d => newXScale(d.x))
+              .y(d => newYScale(d.y))(lineData));
+
+            // Update R² display
+            svg.select('.regression-info')
+              .text(`R² = ${visibleRegression.rSquared.toFixed(3)}`);
+          }
+        } else {
+          regressionLine.style('display', 'none');
+          svg.select('.regression-info').style('display', 'none');
+        }
+      }
+
+      // Update brush extent to match zoom
+      brushGroup.call(brush.move, null);
+    });
+
+  // Apply zoom to the entire SVG
+  svg.call(zoom);
+
+  // Add brush to SVG (after zoom so brush can override zoom events)
+  const brushGroup = svg.append('g')
+    .attr('class', 'brush')
+    .call(brush);
 }
 
 function calculateLinearRegression(data) {
