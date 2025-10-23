@@ -22,8 +22,12 @@ function createChoropleth(selector = '.Map') {
     .attr('preserveAspectRatio', 'xMidYMid meet')
     .style('background-color', '#f0f8ff');
 
-  const projection = d3.geoNaturalEarth1(); 
-  const path = d3.geoPath().projection(projection); 
+  const projection = d3.geoNaturalEarth1();
+  const path = d3.geoPath().projection(projection);
+
+  // Create a group for the map that will be transformed during zoom
+  const mapGroup = svg.append('g')
+    .attr('class', 'map-group'); 
 
   let mapData = [];
   let valueField, colorScale, legendTitle;
@@ -127,7 +131,7 @@ function createChoropleth(selector = '.Map') {
       'W. Sahara': 'Western Sahara'
     };
 
-    svg.selectAll('.country')
+    mapGroup.selectAll('.country')
       .data(countries.features)
       .enter()
       .append('path')
@@ -214,6 +218,28 @@ function createChoropleth(selector = '.Map') {
           selectedCountries: selectedCountries
         });
       });
+
+    // Add zoom functionality after countries are added
+    const zoom = d3.zoom()
+      .scaleExtent([1, 8]) // Scale from 1x (initial view) to 8x zoom
+      .on('zoom', function(event) {
+        const transform = event.transform;
+
+        // When at minimum zoom (scale = 1), reset to original position
+        if (transform.k <= 1) {
+          const resetTransform = d3.zoomIdentity;
+          mapGroup.attr('transform', resetTransform);
+          // Update the zoom behavior to reflect the reset
+          svg.call(zoom.transform, resetTransform);
+        } else {
+          // Apply transform directly without constraints
+          mapGroup.attr('transform', transform);
+        }
+      });
+
+    // Apply zoom to the SVG
+    svg.call(zoom);
+
   }).catch(function(error) {
     console.error('Error loading world data:', error);
   });
