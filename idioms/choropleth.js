@@ -1,6 +1,9 @@
 function createChoropleth(selector = '.Map') {
   const container = d3.select(selector);
-  container.selectAll('svg').remove(); 
+
+  // Check if SVG already exists
+  let svg = container.select('svg');
+  const isFirstRender = svg.empty(); 
 
   // Usa getters pra aceder a GlobalSTate
   const selectedFilter = window.getSelectedFilter();
@@ -14,20 +17,23 @@ function createChoropleth(selector = '.Map') {
   const width = containerRect.width;
   const height = containerRect.height;
 
-  const svg = container
-    .append('svg')
-    .attr('width', '100%')
-    .attr('height', '100%')
-    .attr('viewBox', `0 0 ${width} ${height}`)
-    .attr('preserveAspectRatio', 'xMidYMid meet')
-    .style('background-color', '#f0f8ff');
+  if (isFirstRender) {
+    svg = container
+      .append('svg')
+      .attr('width', '100%')
+      .attr('height', '100%')
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('preserveAspectRatio', 'xMidYMid meet')
+      .style('background-color', '#f0f8ff');
+
+    // Create a group for the map that will be transformed during zoom
+    svg.append('g')
+      .attr('class', 'map-group');
+  }
 
   const projection = d3.geoNaturalEarth1();
   const path = d3.geoPath().projection(projection);
-
-  // Create a group for the map that will be transformed during zoom
-  const mapGroup = svg.append('g')
-    .attr('class', 'map-group'); 
+  const mapGroup = svg.select('.map-group'); 
 
   let mapData = [];
   let valueField, colorScale, legendTitle;
@@ -81,19 +87,16 @@ function createChoropleth(selector = '.Map') {
     dataByCountry.set(d.country, d[valueField]);
   });
 
-  const tooltip = d3.select('body')
-    .append('div')
-    .attr('class', 'tooltip')
-    .style('opacity', 0);
+  let tooltip = d3.select('body').select('.tooltip');
+  if (tooltip.empty()) {
+    tooltip = d3.select('body')
+      .append('div')
+      .attr('class', 'tooltip')
+      .style('opacity', 0);
+  }
 
-  // TopoJSON do mundo
-  d3.json('./libs/countries-110m.json').then(function(world) {
-    // Converte TopoJSON para GeoJSON
-    const countries = topojson.feature(world, world.objects.countries);
-
-    projection.fitSize([width, height], countries);
-
-    // Nomes do dataset são diferentes dos do TOPO, faz um mapzinho
+  // Function to update country styling
+  function updateCountries() {
     const countryNameMap = {
       'United States of America': 'United States',
       'Russia': 'Russia',
@@ -131,93 +134,134 @@ function createChoropleth(selector = '.Map') {
       'W. Sahara': 'Western Sahara'
     };
 
+    // Update existing countries or create new ones
     mapGroup.selectAll('.country')
-      .data(countries.features)
-      .enter()
-      .append('path')
-      .attr('class', 'country')
-      .attr('d', path) 
       .attr('fill', function(d) {
-        // Pega o nome do pais e os dados do tal
         const countryName = countryNameMap[d.properties.name] || d.properties.name;
         const countryValue = dataByCountry.get(countryName);
-        return countryValue ? colorScale(countryValue) : '#ccc'; // Ve a hue do valor ou cinza se n tiver
+        return countryValue ? colorScale(countryValue) : '#ccc';
       })
       .attr('stroke', function(d) {
-        // Vermelho pra paises selecionados
         const countryName = countryNameMap[d.properties.name] || d.properties.name;
         const choroplethSelected = window.getChoroplethSelectedCountries();
         return choroplethSelected.includes(countryName) ? '#ff0000' : '#333';
       })
       .attr('stroke-width', function(d) {
-        // outline
         const countryName = countryNameMap[d.properties.name] || d.properties.name;
         const choroplethSelected = window.getChoroplethSelectedCountries();
         return choroplethSelected.includes(countryName) ? 2 : 0.5;
-      }) 
-      .style('cursor', 'pointer') // maozinha
-      // Hover
-      .on('mouseover', function(event, d) {
-        const currentElement = d3.select(this);
-        const originalStrokeWidth = currentElement.attr('stroke-width');
-        currentElement.attr('data-original-stroke-width', originalStrokeWidth);
-        currentElement.attr('stroke-width', 2);
-
-        const countryName = countryNameMap[d.properties.name] || d.properties.name;
-        const countryValue = dataByCountry.get(countryName);
-        const value = countryValue || 'No data';
-
-        // Mostrar os dados no tooltip
-        tooltip
-          .style('opacity', 1)
-          .html(`
-            <strong>${countryName}</strong><br/>
-            ${legendTitle}: ${typeof value === 'number' ? value.toFixed(selectedFilter === 'obesity-rate' ? 1 : 0) : value}${selectedFilter === 'obesity-rate' && typeof value === 'number' ? '%' : ''}
-          `)
-          .style('left', (event.pageX + 10) + 'px')
-          .style('top', (event.pageY - 10) + 'px');
-      })
-      .on('mouseout', function() {
-        const currentElement = d3.select(this);
-        const originalStrokeWidth = currentElement.attr('data-original-stroke-width') || 0.5;
-        currentElement.attr('stroke-width', originalStrokeWidth);
-        tooltip.style('opacity', 0);
-      })
-      // Click pra selecionar/deselecionar pais
-      .on('click', function(event, d) {
-        tooltip.style('opacity', 0); 
-
-        const countryName = countryNameMap[d.properties.name] || d.properties.name;
-        const currentChoroplethSelection = window.getChoroplethSelectedCountries();
-        const isCurrentlySelected = currentChoroplethSelection.includes(countryName);
-
-        let newChoroplethSelection;
-        if (isCurrentlySelected) {
-          // Remove se ja ta selecionado
-          newChoroplethSelection = currentChoroplethSelection.filter(c => c !== countryName);
-        } else {
-          // deixa add até 5 paises
-          if (currentChoroplethSelection.length < 5) {
-            newChoroplethSelection = [...currentChoroplethSelection, countryName];
-
-            // Marcar o checkbox do pais selecionado
-            const countryCheckbox = d3.select(`#country-${countryName.replace(/\s+/g, '-')}`);
-            if (!countryCheckbox.empty()) {
-              countryCheckbox.property('checked', true);
-            }
-          } else {
-            // Não permite selecionar mais de 5 países
-            return;
-          }
-        }
-
-        // Fazer update do GlobalState
-        const selectedCountries = window.getSelectedCountries();
-        window.updateGlobalState({
-          choroplethSelectedCountries: newChoroplethSelection,
-          selectedCountries: selectedCountries
-        });
       });
+  }
+
+  if (isFirstRender) {
+    // TopoJSON do mundo - load only on first render
+    d3.json('./libs/countries-110m.json').then(function(world) {
+      // Converte TopoJSON para GeoJSON
+      const countries = topojson.feature(world, world.objects.countries);
+
+      projection.fitSize([width, height], countries);
+
+      const countryNameMap = {
+        'United States of America': 'United States',
+        'Russia': 'Russia',
+        'Czech Republic': 'Czechia',
+        'Dem. Rep. Congo': 'Democratic Republic of Congo',
+        'Central African Rep.': 'Central African Republic',
+        'Bosnia and Herz.': 'Bosnia and Herzegovina',
+        'Trinidad and Tobago': 'Trinidad and Tobago',
+        'Eq. Guinea': 'Equatorial Guinea',
+        'Solomon Is.': 'Solomon Islands',
+        'Papua New Guinea': 'Papua New Guinea',
+        'Timor-Leste': 'Timor-Leste',
+        'Costa Rica': 'Costa Rica',
+        'Dominican Rep.': 'Dominican Republic',
+        'El Salvador': 'El Salvador',
+        'Puerto Rico': 'Puerto Rico',
+        'Côte d\'Ivoire': 'Cote d\'Ivoire',
+        'Myanmar': 'Myanmar',
+        'Iran': 'Iran',
+        'Syria': 'Syria',
+        'Venezuela': 'Venezuela',
+        'Bolivia': 'Bolivia',
+        'Tanzania': 'Tanzania',
+        'Macedonia': 'North Macedonia',
+        'Moldova': 'Moldova',
+        'Lao PDR': 'Laos',
+        'Vietnam': 'Viet Nam',
+        'Republic of the Congo': 'Congo',
+        'Brunei': 'Brunei Darussalam',
+        'Gambia': 'Gambia',
+        'Bahamas': 'Bahamas',
+        'Cape Verde': 'Cape Verde',
+        'eSwatini': 'Eswatini',
+        'S. Sudan': 'South Sudan',
+        'W. Sahara': 'Western Sahara'
+      };
+
+      mapGroup.selectAll('.country')
+        .data(countries.features)
+        .enter()
+        .append('path')
+        .attr('class', 'country')
+        .attr('d', path) 
+        .style('cursor', 'pointer')
+        .on('mouseover', function(event, d) {
+          const currentElement = d3.select(this);
+          const originalStrokeWidth = currentElement.attr('stroke-width');
+          currentElement.attr('data-original-stroke-width', originalStrokeWidth);
+          currentElement.attr('stroke-width', 2);
+
+          const countryName = countryNameMap[d.properties.name] || d.properties.name;
+          const countryValue = dataByCountry.get(countryName);
+          const value = countryValue || 'No data';
+
+          tooltip
+            .style('opacity', 1)
+            .html(`
+              <strong>${countryName}</strong><br/>
+              ${legendTitle}: ${typeof value === 'number' ? value.toFixed(selectedFilter === 'obesity-rate' ? 1 : 0) : value}${selectedFilter === 'obesity-rate' && typeof value === 'number' ? '%' : ''}
+            `)
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY - 10) + 'px');
+        })
+        .on('mouseout', function() {
+          const currentElement = d3.select(this);
+          const originalStrokeWidth = currentElement.attr('data-original-stroke-width') || 0.5;
+          currentElement.attr('stroke-width', originalStrokeWidth);
+          tooltip.style('opacity', 0);
+        })
+        .on('click', function(event, d) {
+          tooltip.style('opacity', 0);
+
+          const countryName = countryNameMap[d.properties.name] || d.properties.name;
+          const currentChoroplethSelection = window.getChoroplethSelectedCountries();
+          const isCurrentlySelected = currentChoroplethSelection.includes(countryName);
+
+          let newChoroplethSelection;
+          if (isCurrentlySelected) {
+            newChoroplethSelection = currentChoroplethSelection.filter(c => c !== countryName);
+          } else {
+            if (currentChoroplethSelection.length < 5) {
+              newChoroplethSelection = [...currentChoroplethSelection, countryName];
+
+              const countryCheckbox = d3.select(`#country-${countryName.replace(/\s+/g, '-')}`);
+              if (!countryCheckbox.empty()) {
+                countryCheckbox.property('checked', true);
+              }
+            } else {
+              return;
+            }
+          }
+
+          const selectedCountries = window.getSelectedCountries();
+          window.updateGlobalState({
+            choroplethSelectedCountries: newChoroplethSelection,
+            selectedCountries: selectedCountries
+          });
+        });
+
+      // Initial styling
+      updateCountries();
 
     // Add zoom functionality after countries are added
     const zoom = d3.zoom()
@@ -243,16 +287,25 @@ function createChoropleth(selector = '.Map') {
   }).catch(function(error) {
     console.error('Error loading world data:', error);
   });
+  } else {
+    // On subsequent renders, just update the styling
+    updateCountries();
+  }
 
-
+  // Update or create legend
   const legendWidth = Math.min(200, width * 0.25);
   const legendHeight = 20;
   const legendX = width - legendWidth - 20;
   const legendY = height - 60;
 
-  const legend = svg.append('g')
-    .attr('class', 'legend')
-    .attr('transform', `translate(${legendX}, ${legendY})`);
+  let legend = svg.select('.legend');
+  if (legend.empty()) {
+    legend = svg.append('g')
+      .attr('class', 'legend')
+      .attr('transform', `translate(${legendX}, ${legendY})`);
+  } else {
+    legend.selectAll('*').remove();
+  }
 
   // Cria buckets 
   const domain = colorScale.domain();

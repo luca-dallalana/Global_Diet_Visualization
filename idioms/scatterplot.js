@@ -264,14 +264,32 @@ function createScatterplot(selector = '#scatterplot') {
       });
     });
 
-  const regression = calculateLinearRegression(validData);
+  const regression = calculateRegression(validData, isGdpOnX);
   if (regression) {
     const xMin = d3.min(validData, d => d.x);
     const xMax = d3.max(validData, d => d.x);
-    const lineData = [
-      { x: xMin, y: regression.slope * xMin + regression.intercept },
-      { x: xMax, y: regression.slope * xMax + regression.intercept }
-    ];
+
+    let lineData;
+    if (isGdpOnX) {
+      // For logarithmic regression, create more points for smooth curve
+      const logXMin = Math.log(xMin);
+      const logXMax = Math.log(xMax);
+      const numPoints = 50;
+      lineData = [];
+
+      for (let i = 0; i <= numPoints; i++) {
+        const logX = logXMin + (logXMax - logXMin) * i / numPoints;
+        const x = Math.exp(logX);
+        const y = regression.slope * logX + regression.intercept;
+        lineData.push({ x, y });
+      }
+    } else {
+      // Linear regression for non-logarithmic cases
+      lineData = [
+        { x: xMin, y: regression.slope * xMin + regression.intercept },
+        { x: xMax, y: regression.slope * xMax + regression.intercept }
+      ];
+    }
 
     svg.append('path')
       .datum(lineData)
@@ -454,14 +472,32 @@ function createScatterplot(selector = '#scatterplot') {
         );
 
         if (visibleData.length >= 2) {
-          const visibleRegression = calculateLinearRegression(visibleData);
+          const visibleRegression = calculateRegression(visibleData, isGdpOnX);
           if (visibleRegression) {
             const xMin = Math.max(d3.min(visibleData, d => d.x), visibleXDomain[0]);
             const xMax = Math.min(d3.max(visibleData, d => d.x), visibleXDomain[1]);
-            const lineData = [
-              { x: xMin, y: visibleRegression.slope * xMin + visibleRegression.intercept },
-              { x: xMax, y: visibleRegression.slope * xMax + visibleRegression.intercept }
-            ];
+
+            let lineData;
+            if (isGdpOnX) {
+              // For logarithmic regression, create more points for smooth curve
+              const logXMin = Math.log(xMin);
+              const logXMax = Math.log(xMax);
+              const numPoints = 30;
+              lineData = [];
+
+              for (let i = 0; i <= numPoints; i++) {
+                const logX = logXMin + (logXMax - logXMin) * i / numPoints;
+                const x = Math.exp(logX);
+                const y = visibleRegression.slope * logX + visibleRegression.intercept;
+                lineData.push({ x, y });
+              }
+            } else {
+              // Linear regression for non-logarithmic cases
+              lineData = [
+                { x: xMin, y: visibleRegression.slope * xMin + visibleRegression.intercept },
+                { x: xMax, y: visibleRegression.slope * xMax + visibleRegression.intercept }
+              ];
+            }
 
             regressionLine.attr('d', d3.line()
               .x(d => newXScale(d.x))
@@ -490,22 +526,31 @@ function createScatterplot(selector = '#scatterplot') {
     .call(brush);
 }
 
-function calculateLinearRegression(data) {
+function calculateRegression(data, isLogarithmic = false) {
   if (data.length < 2) return null;
 
-  // Extrai valores X e Y dos dados
-  const xValues = data.map(d => d.x);
   const yValues = data.map(d => d.y);
   const n = data.length;
 
-  // Calcula médias dos valores X e Y
-  const xMean = d3.mean(xValues);
-  const yMean = d3.mean(yValues);
+  let xValues, xMean, yMean;
 
-  // Variáveis para cálculo da regressão linear
-  let numerator = 0;   
-  let denominator = 0; 
-  let totalSumSquares = 0; 
+  if (isLogarithmic) {
+    // For logarithmic regression: y = a * ln(x) + b
+    // Transform x values to ln(x)
+    xValues = data.map(d => Math.log(d.x));
+  } else {
+    // For linear regression: y = a * x + b
+    xValues = data.map(d => d.x);
+  }
+
+  // Calculate means
+  xMean = d3.mean(xValues);
+  yMean = d3.mean(yValues);
+
+  // Calculate regression coefficients
+  let numerator = 0;
+  let denominator = 0;
+  let totalSumSquares = 0;
 
   for (let i = 0; i < n; i++) {
     numerator += (xValues[i] - xMean) * (yValues[i] - yMean);
@@ -516,6 +561,7 @@ function calculateLinearRegression(data) {
   const slope = numerator / denominator;
   const intercept = yMean - slope * xMean;
 
+  // Calculate R-squared
   let residualSumSquares = 0;
   for (let i = 0; i < n; i++) {
     const predicted = slope * xValues[i] + intercept;
@@ -524,4 +570,9 @@ function calculateLinearRegression(data) {
   const rSquared = 1 - (residualSumSquares / totalSumSquares);
 
   return { slope, intercept, rSquared };
+}
+
+// Keep the old function for backward compatibility
+function calculateLinearRegression(data) {
+  return calculateRegression(data, false);
 }
