@@ -152,9 +152,13 @@ function createChoropleth(selector = '.Map') {
         return choroplethSelected.includes(countryName) ? 2 : 0.5;
       }) 
       .style('cursor', 'pointer') // maozinha
-      // Hover 
+      // Hover
       .on('mouseover', function(event, d) {
-        d3.select(this).attr('stroke-width', 2);
+        const currentElement = d3.select(this);
+        const originalStrokeWidth = currentElement.attr('stroke-width');
+        currentElement.attr('data-original-stroke-width', originalStrokeWidth);
+        currentElement.attr('stroke-width', 2);
+
         const countryName = countryNameMap[d.properties.name] || d.properties.name;
         const countryValue = dataByCountry.get(countryName);
         const value = countryValue || 'No data';
@@ -166,12 +170,14 @@ function createChoropleth(selector = '.Map') {
             <strong>${countryName}</strong><br/>
             ${legendTitle}: ${typeof value === 'number' ? value.toFixed(selectedFilter === 'obesity-rate' ? 1 : 0) : value}${selectedFilter === 'obesity-rate' && typeof value === 'number' ? '%' : ''}
           `)
-          .style('left', (event.pageX + 10) + 'px') 
+          .style('left', (event.pageX + 10) + 'px')
           .style('top', (event.pageY - 10) + 'px');
       })
       .on('mouseout', function() {
-        d3.select(this).attr('stroke-width', 0.5); // Reseta o outline 
-        tooltip.style('opacity', 0); 
+        const currentElement = d3.select(this);
+        const originalStrokeWidth = currentElement.attr('data-original-stroke-width') || 0.5;
+        currentElement.attr('stroke-width', originalStrokeWidth);
+        tooltip.style('opacity', 0);
       })
       // Click pra selecionar/deselecionar pais
       .on('click', function(event, d) {
@@ -189,15 +195,15 @@ function createChoropleth(selector = '.Map') {
           // deixa add até 5 paises
           if (currentChoroplethSelection.length < 5) {
             newChoroplethSelection = [...currentChoroplethSelection, countryName];
-          } else {
-            // FIFO remover o mais antigo
-            newChoroplethSelection = [...currentChoroplethSelection.slice(1), countryName];
-          }
 
-          // Marcar o checkbox do pais selecionado
-          const countryCheckbox = d3.select(`#country-${countryName.replace(/\s+/g, '-')}`);
-          if (!countryCheckbox.empty()) {
-            countryCheckbox.property('checked', true);
+            // Marcar o checkbox do pais selecionado
+            const countryCheckbox = d3.select(`#country-${countryName.replace(/\s+/g, '-')}`);
+            if (!countryCheckbox.empty()) {
+              countryCheckbox.property('checked', true);
+            }
+          } else {
+            // Não permite selecionar mais de 5 países
+            return;
           }
         }
 

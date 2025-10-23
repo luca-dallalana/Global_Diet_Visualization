@@ -114,7 +114,7 @@ function createScatterplot(selector = '#scatterplot') {
       .range([config.margin.left, config.width - config.margin.right]);
 
   const yScale = d3.scaleLinear()
-    .domain(d3.extent(validData, d => d.y))
+    .domain([0, d3.max(validData, d => d.y)])
     .nice()
     .range([config.height - config.margin.bottom, config.margin.top]);
 
@@ -179,15 +179,15 @@ function createScatterplot(selector = '#scatterplot') {
         // Adiciona à seleção no mac 5
         if (currentChoroplethSelection.length < 5) {
           newChoroplethSelection = [...currentChoroplethSelection, countryName];
-        } else {
-          // Remove o primeiro e adiciona o novo 
-          newChoroplethSelection = [...currentChoroplethSelection.slice(1), countryName];
-        }
 
-        // Marca checkbox do país adicionado 
-        const countryCheckbox = d3.select(`#country-${countryName.replace(/\s+/g, '-')}`);
-        if (!countryCheckbox.empty()) {
-          countryCheckbox.property('checked', true);
+          // Marca checkbox do país adicionado
+          const countryCheckbox = d3.select(`#country-${countryName.replace(/\s+/g, '-')}`);
+          if (!countryCheckbox.empty()) {
+            countryCheckbox.property('checked', true);
+          }
+        } else {
+          // Não permite selecionar mais de 5 países
+          return;
         }
       }
 
@@ -227,7 +227,7 @@ function createScatterplot(selector = '#scatterplot') {
 
   const xAxis = isGdpOnX ?
     d3.axisBottom(xScale)
-      .tickValues([250, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000])
+      .tickValues([0, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000])
       .tickFormat(d => d < 1000 ? d.toString() : (d / 1000) + 'k') :
     d3.axisBottom(xScale).ticks(6);
 

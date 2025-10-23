@@ -90,7 +90,7 @@ function createLineChart(selector = '#linechart') {
     .range([margin.left, width - margin.right]);
 
   const yScale = d3.scaleLinear()
-    .domain(d3.extent(filteredData, d => d.value))
+    .domain([0, d3.max(filteredData, d => d.value)])
     .nice()
     .range([height - margin.bottom, margin.top]);
 
