@@ -223,7 +223,7 @@ function updateAllIdioms() {
 
 function setInitialData() {
   // Define países iniciais para o choropleth
-  const initialChoroplethCountries = ['United States', 'Brazil', 'India', 'China', 'Australia'];
+  const initialChoroplethCountries = ['Canada', 'Brazil', 'India', 'China', 'Australia'];
   globalState.choroplethSelectedCountries = initialChoroplethCountries;
 
   // Assign colors in order to initial countries
