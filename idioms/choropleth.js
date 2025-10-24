@@ -224,10 +224,14 @@ function createChoropleth(selector = '.Map') {
             .style('left', (event.pageX + 10) + 'px')
             .style('top', (event.pageY - 10) + 'px');
         })
-        .on('mouseout', function() {
+        .on('mouseout', function(event, d) {
           const currentElement = d3.select(this);
-          const originalStrokeWidth = currentElement.attr('data-original-stroke-width') || 0.5;
-          currentElement.attr('stroke-width', originalStrokeWidth);
+          const countryName = countryNameMap[d.properties.name] || d.properties.name;
+          const choroplethSelected = window.getChoroplethSelectedCountries();
+
+          // Check if country is currently selected to maintain proper stroke width
+          const strokeWidth = choroplethSelected.includes(countryName) ? 3 : 0.5;
+          currentElement.attr('stroke-width', strokeWidth);
           tooltip.style('opacity', 0);
         })
         .on('click', function(event, d) {
@@ -240,9 +244,13 @@ function createChoropleth(selector = '.Map') {
           let newChoroplethSelection;
           if (isCurrentlySelected) {
             newChoroplethSelection = currentChoroplethSelection.filter(c => c !== countryName);
+            // Remove color assignment when country is deselected
+            window.removeCountryColor(countryName);
           } else {
             if (currentChoroplethSelection.length < 5) {
               newChoroplethSelection = [...currentChoroplethSelection, countryName];
+              // Assign random color when country is selected
+              window.assignRandomCountryColor(countryName);
 
               const countryCheckbox = d3.select(`#country-${countryName.replace(/\s+/g, '-')}`);
               if (!countryCheckbox.empty()) {

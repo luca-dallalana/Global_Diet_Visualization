@@ -9,7 +9,8 @@ let globalState = {
   yearRange: { start: 1961, end: 2022 },
   selectedFilter: 'total-calories',
   selectedDataType: 'calories-gdp',
-  choroplethSelectedCountries: []
+  choroplethSelectedCountries: [],
+  countryColorMap: new Map() // Maps country name to assigned random color
 };
 
 // Tamanho geral da vis
@@ -28,10 +29,26 @@ function getCountryHighlightColors() {
 
 // Função para obter cor de um país selecionado
 function getCountryColor(country) {
-  const selectedCountries = window.getChoroplethSelectedCountries();
-  const colors = getCountryHighlightColors();
-  const index = selectedCountries.indexOf(country);
-  return index >= 0 ? colors[index] : '#ff0000'; // fallback to red if not found
+  return globalState.countryColorMap.get(country) || '#ff0000'; // fallback to red if not found
+}
+
+// Função para atribuir cor aleatória a um país quando selecionado
+function assignRandomCountryColor(country) {
+  if (!globalState.countryColorMap.has(country)) {
+    const colors = getCountryHighlightColors();
+    const usedColors = new Set(globalState.countryColorMap.values());
+    const availableColors = colors.filter(color => !usedColors.has(color));
+
+    // If all colors are used, fall back to any color
+    const colorPool = availableColors.length > 0 ? availableColors : colors;
+    const randomColor = colorPool[Math.floor(Math.random() * colorPool.length)];
+    globalState.countryColorMap.set(country, randomColor);
+  }
+}
+
+// Função para remover cor de um país quando desselecionado
+function removeCountryColor(country) {
+  globalState.countryColorMap.delete(country);
 }
 
 // Carregar dados dos csvs e criar o primeiro estado da vis
@@ -121,7 +138,26 @@ function populateCountryCheckboxes(countries, preserveSelections = false) {
       const selectedCountries = Array.from(d3.selectAll('#countryCheckboxes input[type="checkbox"]:checked').nodes())
         .map(checkbox => checkbox.value);
 
-      updateGlobalState({ selectedCountries: selectedCountries });
+      // Update choropleth selection to match checkbox selection
+      const currentChoroplethSelection = globalState.choroplethSelectedCountries;
+      const newChoroplethSelection = currentChoroplethSelection.filter(country => selectedCountries.includes(country));
+
+      // Remove colors for countries that are being deselected
+      const deselectedCountries = globalState.selectedCountries.filter(country => !selectedCountries.includes(country));
+      deselectedCountries.forEach(country => {
+        window.removeCountryColor(country);
+      });
+
+      // Assign colors for newly selected countries
+      const newlySelectedCountries = selectedCountries.filter(country => !globalState.selectedCountries.includes(country));
+      newlySelectedCountries.forEach(country => {
+        window.assignRandomCountryColor(country);
+      });
+
+      updateGlobalState({
+        selectedCountries: selectedCountries,
+        choroplethSelectedCountries: newChoroplethSelection
+      });
     });
 
   checkboxes.append('label')
@@ -189,6 +225,12 @@ function setInitialData() {
   // Define países iniciais para o choropleth
   const initialChoroplethCountries = ['United States', 'Brazil', 'India', 'China', 'Australia'];
   globalState.choroplethSelectedCountries = initialChoroplethCountries;
+
+  // Assign colors in order to initial countries
+  const colors = getCountryHighlightColors();
+  initialChoroplethCountries.forEach((country, index) => {
+    globalState.countryColorMap.set(country, colors[index]);
+  });
 
   // Pre-seleciona os checkboxes dos países iniciais
   initialChoroplethCountries.forEach(country => {
@@ -269,9 +311,14 @@ function setupEventListeners() {
     d3.selectAll('#countryCheckboxes input[type="checkbox"]')
       .property('checked', false);
 
+    // Clear all country color assignments
+    globalState.countryColorMap.clear();
+
     updateGlobalState({
       selectedCountries: [],
       choroplethSelectedCountries: []
     });
   });
-}
+}window.getCountryColor = getCountryColor;
+window.assignRandomCountryColor = assignRandomCountryColor;
+window.removeCountryColor = removeCountryColor;
