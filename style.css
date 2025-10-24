@@ -5,6 +5,7 @@ body {
   height: 100vh;
   overflow: hidden;
   box-sizing: border-box;
+  background-color: #a6cee3;
 }
 
 .container {
@@ -24,6 +25,7 @@ body {
   grid-area: title;
   margin: 0 0 5px 0;
   text-align: center;
+ 
 }
 
 .Map {
@@ -31,6 +33,13 @@ body {
   overflow: hidden;
   border: 1px solid #ddd;
   padding: 10px;
+  background-color: white;
+  border-radius: 16px;
+}
+
+.Map svg{
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .Controls {
@@ -38,6 +47,7 @@ body {
   overflow-y: auto;
   border: 1px solid #ddd;
   padding: 10px;
+  background-color: white;
 }
 
 .ScatterPlot {
@@ -45,6 +55,8 @@ body {
   overflow: hidden;
   border: 1px solid #ddd;
   padding: 5px;
+  text-align: center;
+  background-color: white;
 }
 
 .LineChart {
@@ -52,6 +64,8 @@ body {
   overflow: hidden;
   border: 1px solid #ddd;
   padding: 10px;
+  text-align: center;
+  background-color: white;
 }
 
 .DonutChart {
@@ -59,6 +73,7 @@ body {
   overflow: hidden;
   border: 1px solid #ddd;
   padding: 5px;
+  background-color: white;
 }
 
 .control-group {
@@ -97,4 +112,35 @@ body {
   stroke: #ff6b6b;
   stroke-width: 2;
   fill: none;
+}
+
+.DonutChart,
+.ScatterPlot,
+.LineChart,
+.Map,
+.Controls {
+  background-color: white;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+
+.chart-container {
+  background-color: #f0f8ff;
+  border-radius: 5px;
+  padding: 8px;
+  height: 100%;
+  border: 1px solid #ddd;
+  box-sizing: border-box;
+}
+
+
+.chart-container h4,
+.chart-container h3 {
+  margin: 0 0 8px 0;
+  padding: 0;
+  text-align: center;
+  font-size: 14px;
+  color: #333;
 }

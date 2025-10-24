@@ -16,64 +16,73 @@
   </head>
   <body onload="init()">
     <div class="container">
-      <VisualizationTitle>Global Dietary Behaviour</VisualizationTitle>
+      
+      <h2 class="VisualizationTitle">Global Dietary Behaviour</h2>
 
       <div class="Map">
       </div>
 
       <div class="Controls">
-        <div class="control-group">
-          <label for="filterSelect">Selected Filter:</label>
-          <select id="filterSelect">
-            <option value="total-calories">Total Calories</option>
-            <option value="protein-calories">Calories from Protein</option>
-            <option value="carbs-calories">Calories from Carbohydrates</option>
-            <option value="fat-calories">Calories from Fat</option>
-            <option value="obesity-rate">Obesity Rate</option>
-          </select>
-        </div>
+        <div class="chart-container">
+          <div class="control-group">
+            <label for="filterSelect">Selected Filter:</label>
+            <select id="filterSelect">
+              <option value="total-calories">Total Calories</option>
+              <option value="protein-calories">Calories from Protein</option>
+              <option value="carbs-calories">Calories from Carbohydrates</option>
+              <option value="fat-calories">Calories from Fat</option>
+              <option value="obesity-rate">Obesity Rate</option>
+            </select>
+          </div>
 
-        <div class="control-group">
-          <label>Year Range:</label>
-          <div id="yearRangeSlider"></div>
-        </div>
+          <div class="control-group">
+            <label>Year Range:</label>
+            <div id="yearRangeSlider"></div>
+          </div>
 
-        <div class="control-group">
-          <label for="dataSelect">Scatter Plot Data:</label>
-          <select id="dataSelect">
-            <option value="calories-gdp">GDP per Capita vs Daily Calories</option>
-            <option value="obesity-gdp">GDP per Capita vs Obesity Rate</option>
-            <option value="calories-obesity">Daily Calories vs Obesity Rate</option>
-          </select>
-        </div>
+          <div class="control-group">
+            <label for="dataSelect">Scatter Plot Data:</label>
+            <select id="dataSelect">
+              <option value="calories-gdp">GDP per Capita vs Daily Calories</option>
+              <option value="obesity-gdp">GDP per Capita vs Obesity Rate</option>
+              <option value="calories-obesity">Daily Calories vs Obesity Rate</option>
+            </select>
+          </div>
 
-        <div class="control-group country-selection">
-          <label for="countrySelect">Countries:</label>
-          <div class="country-multiselect">
-            <input type="text" id="countrySearch" placeholder="Search countries..." />
-            <div class="checkbox-container">
-              <div class="checkbox-controls">
-                <button id="selectAllCountries" type="button">Select All</button>
-                <button id="clearAllCountries" type="button">Clear All</button>
+          <div class="control-group country-selection">
+            <label for="countrySelect">Countries:</label>
+            <div class="country-multiselect">
+              <input type="text" id="countrySearch" placeholder="Search countries..." />
+              <div class="checkbox-container">
+                <div class="checkbox-controls">
+                  <button id="selectAllCountries" type="button">Select All</button>
+                  <button id="clearAllCountries" type="button">Clear All</button>
+                </div>
+                <div id="countryCheckboxes" class="checkbox-list"></div>
               </div>
-              <div id="countryCheckboxes" class="checkbox-list"></div>
             </div>
           </div>
         </div>
       </div>
 
       <div class="ScatterPlot">
-        <h4>Scatter Plot Analysis</h4>
-        <div id="scatterplot"></div>
+        <div class="chart-container">
+          <h4>Scatter Plot Analysis</h4>
+          <div id="scatterplot"></div>
+        </div>
       </div>
 
       <div class="LineChart">
-        <h4 id="linechart-title">Daily Calorie Trends Over Time</h4>
-        <div id="linechart"></div>
+        <div class="chart-container">
+          <h4 id="linechart-title">Daily Calorie Trends Over Time</h4>
+          <div id="linechart"></div>
+        </div>
       </div>
 
       <div class="DonutChart">
-        <div id="donutchart"></div>
+        <div class="chart-container">
+          <div id="donutchart"></div>
+        </div>
       </div>
     </div>
   </body>

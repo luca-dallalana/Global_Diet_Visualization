@@ -155,8 +155,7 @@ function createScatterplot(selector = '#scatterplot') {
     .append('svg')
     .attr('width', config.width)
     .attr('height', config.height)
-    .style('margin-down', '5px')
-    .style('margin-left', '40px');
+    .style('margin-down', '5px');
 
   // limita escala do PIB para máximo $140,000
   const isGdpOnX = scatterplotData[0]?.xLabel?.includes('GDP');
@@ -309,7 +308,7 @@ function createScatterplot(selector = '#scatterplot') {
 
   const xAxis = isGdpOnX ?
     d3.axisBottom(xScale)
-      .tickValues([0, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000])
+      .tickValues([500, 1000, 2000, 5000, 10000, 20000, 50000, 100000])
       .tickFormat(d => d < 1000 ? d.toString() : (d / 1000) + 'k') :
     d3.axisBottom(xScale).ticks(6);
 
