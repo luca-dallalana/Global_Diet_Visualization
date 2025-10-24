@@ -361,12 +361,6 @@ function createScatterplot(selector = '#scatterplot') {
         .y(d => yScale(d.y))
       );
 
-    svg.append('text')
-      .attr('class', 'regression-info')
-      .attr('x', config.width - 10)
-      .attr('y', 15)
-      .attr('text-anchor', 'end')
-      .text(`R² = ${regression.rSquared.toFixed(3)}`);
   }
 
   const xAxis = isGdpOnX ?
@@ -575,8 +569,8 @@ function createScatterplot(selector = '#scatterplot') {
               .y(d => newYScale(d.y))(lineData));
 
 
-            svg.select('.regression-info')
-              .text(`R² = ${visibleRegression.rSquared.toFixed(3)}`);
+           
+              
           }
         } else {
           regressionLine.style('display', 'none');
