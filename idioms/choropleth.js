@@ -1,7 +1,6 @@
 function createChoropleth(selector = '.Map') {
   const container = d3.select(selector);
 
-  // Check if SVG already exists
   let svg = container.select('svg');
   const isFirstRender = svg.empty(); 
 
@@ -26,7 +25,6 @@ function createChoropleth(selector = '.Map') {
       .attr('preserveAspectRatio', 'xMidYMid meet')
       .style('background-color', '#f0f8ff');
 
-    // Create a group for the map that will be transformed during zoom
     svg.append('g')
       .attr('class', 'map-group');
   }
@@ -95,7 +93,6 @@ function createChoropleth(selector = '.Map') {
       .style('opacity', 0);
   }
 
-  // Function to update country styling
   function updateCountries() {
     const countryNameMap = {
       'United States of America': 'United States',
@@ -134,7 +131,7 @@ function createChoropleth(selector = '.Map') {
       'W. Sahara': 'Western Sahara'
     };
 
-    // Update existing countries or create new ones
+  
     mapGroup.selectAll('.country')
       .attr('fill', function(d) {
         const countryName = countryNameMap[d.properties.name] || d.properties.name;
@@ -229,7 +226,7 @@ function createChoropleth(selector = '.Map') {
           const countryName = countryNameMap[d.properties.name] || d.properties.name;
           const choroplethSelected = window.getChoroplethSelectedCountries();
 
-          // Check if country is currently selected to maintain proper stroke width
+      
           const strokeWidth = choroplethSelected.includes(countryName) ? 3 : 0.5;
           currentElement.attr('stroke-width', strokeWidth);
           tooltip.style('opacity', 0);
@@ -244,12 +241,12 @@ function createChoropleth(selector = '.Map') {
           let newChoroplethSelection;
           if (isCurrentlySelected) {
             newChoroplethSelection = currentChoroplethSelection.filter(c => c !== countryName);
-            // Remove color assignment when country is deselected
+            // Remove cor atribuida quando pais e deixa de estar selecionado
             window.removeCountryColor(countryName);
           } else {
             if (currentChoroplethSelection.length < 5) {
               newChoroplethSelection = [...currentChoroplethSelection, countryName];
-              // Assign random color when country is selected
+              // Quando pais e selecionado atribui cor random
               window.assignRandomCountryColor(countryName);
 
               const countryCheckbox = d3.select(`#country-${countryName.replace(/\s+/g, '-')}`);
@@ -268,39 +265,32 @@ function createChoropleth(selector = '.Map') {
           });
         });
 
-      // Initial styling
       updateCountries();
 
-    // Add zoom functionality after countries are added
     const zoom = d3.zoom()
-      .scaleExtent([1, 8]) // Scale from 1x (initial view) to 8x zoom
+      .scaleExtent([1, 8]) // 1x para 8x zoom
       .on('zoom', function(event) {
         const transform = event.transform;
 
-        // When at minimum zoom (scale = 1), reset to original position
+        // Quando esta em zoom minimo reverte para posicao original
         if (transform.k <= 1) {
           const resetTransform = d3.zoomIdentity;
           mapGroup.attr('transform', resetTransform);
-          // Update the zoom behavior to reflect the reset
           svg.call(zoom.transform, resetTransform);
         } else {
-          // Apply transform directly without constraints
           mapGroup.attr('transform', transform);
         }
       });
 
-    // Apply zoom to the SVG
     svg.call(zoom);
 
   }).catch(function(error) {
     console.error('Error loading world data:', error);
   });
   } else {
-    // On subsequent renders, just update the styling
     updateCountries();
   }
 
-  // Update or create legend
   const legendWidth = Math.min(200, width * 0.25);
   const legendHeight = 20;
   const legendX = width - legendWidth - 20;

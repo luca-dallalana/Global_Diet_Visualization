@@ -135,6 +135,37 @@ function createScatterplot(selector = '#scatterplot') {
   const container = selector.startsWith('.') ? d3.select(selector).select('#scatterplot') : d3.select(selector);
   container.selectAll('*').remove();
 
+  // Ensure the container can position absolutely-placed controls
+  container.style('position', 'relative');
+
+  // Create a compact top-right brush toggle button showing only a brush emoji. Default: enabled.
+  const brushButton = container.append('button')
+    .attr('class', 'brush-toggle-button')
+    .attr('aria-label', 'Toggle brush')
+    .style('position', 'absolute')
+  .style('right', '10px')
+  .style('top', '2px')
+    .style('z-index', 10)
+    // Compact square button
+    .style('width', '34px')
+    .style('height', '34px')
+    .style('padding', '4px')
+    .style('background', '#fff')
+    .style('border', '1px solid #ccc')
+    .style('border-radius', '6px')
+    .style('cursor', 'pointer')
+    .style('display', 'flex')
+    .style('align-items', 'center')
+    .style('justify-content', 'center')
+    .style('font-size', '18px')
+    .attr('title', 'Disable Brush')
+    .text('🖌️');
+
+  // Store brush-active state on the DOM node so it persists within this invocation
+  // Default: brushing deactivated
+  container.node().__brushActive = false;
+  brushButton.attr('aria-pressed', 'false').attr('title', 'Enable Brush');
+
   const scatterplotData = prepareScatterplotData();
 
   // Verifica se há dados para mostrar com os filtros atuais
@@ -238,10 +269,36 @@ function createScatterplot(selector = '#scatterplot') {
       if (isCurrentlySelected) {
         // Remove da seleção
         newChoroplethSelection = currentChoroplethSelection.filter(c => c !== countryName);
+        // Remove any assigned color for the country
+        if (typeof window.removeCountryColor === 'function') {
+          window.removeCountryColor(countryName);
+        } else if (window.getGlobalState) {
+          // fallback: directly remove from the countryColorMap
+          const gs = window.getGlobalState();
+          if (gs && gs.countryColorMap) gs.countryColorMap.delete(countryName);
+        }
+        // Uncheck the corresponding checkbox if present
+        const removedCheckbox = d3.select(`#country-${countryName.replace(/\s+/g, '-')}`);
+        if (!removedCheckbox.empty()) removedCheckbox.property('checked', false);
       } else {
         // Adiciona à seleção no mac 5
         if (currentChoroplethSelection.length < 5) {
           newChoroplethSelection = [...currentChoroplethSelection, countryName];
+
+          // Assign an unused color from the highlight palette 
+          const colors = (typeof window.getCountryHighlightColors === 'function')
+            ? window.getCountryHighlightColors()
+            : ['#e41a1c', '#e3e300ff', '#4daf4a', '#e7298a', '#ff7f00'];
+
+          if (window.getGlobalState && window.getGlobalState().countryColorMap) {
+            const gs = window.getGlobalState();
+            const usedColors = new Set(Array.from(gs.countryColorMap.values()));
+            const available = colors.filter(c => !usedColors.has(c));
+            const chosenColor = available.length > 0 ? available[0] : colors[0];
+            gs.countryColorMap.set(countryName, chosenColor);
+          } else if (typeof window.assignRandomCountryColor === 'function') {
+            window.assignRandomCountryColor(countryName);
+          }
 
           // Marca checkbox do país adicionado
           const countryCheckbox = d3.select(`#country-${countryName.replace(/\s+/g, '-')}`);
@@ -262,6 +319,12 @@ function createScatterplot(selector = '#scatterplot') {
         selectedCountries: selectedCountries
       });
     });
+
+  // After creating circles, bring choropleth-selected circles to front so they're easy to see
+  const initialChoroSelected = window.getChoroplethSelectedCountries();
+  svg.selectAll('.circle')
+    .filter(d => initialChoroSelected.includes(d.country))
+    .raise();
 
   const regression = calculateRegression(validData, isGdpOnX);
   if (regression) {
@@ -344,26 +407,27 @@ function createScatterplot(selector = '#scatterplot') {
     .attr('text-anchor', 'middle')
     .text(scatterplotData[0]?.yLabel || 'Y Axis');
 
-  // Add brush functionality
   const brush = d3.brush()
     .extent([[config.margin.left, config.margin.top], [config.width - config.margin.right, config.height - config.margin.bottom]])
     .on('start brush end', function(event) {
       const selection = event.selection;
 
       if (selection) {
-        // Get brush coordinates
+        const transform = d3.zoomTransform(svg.node());
+        const curXScale = transform.rescaleX(xScale);
+        const curYScale = transform.rescaleY(yScale);
+
+       
         const [[x0, y0], [x1, y1]] = selection;
 
-        // Convert to data coordinates
-        const xMin = xScale.invert(x0);
-        const xMax = xScale.invert(x1);
-        const yMin = yScale.invert(y1); // Note: y1 is top, y0 is bottom due to SVG coordinate system
-        const yMax = yScale.invert(y0);
+        const xMin = curXScale.invert(x0);
+        const xMax = curXScale.invert(x1);
+        const yMin = curYScale.invert(y1); 
+        const yMax = curYScale.invert(y0);
 
-        // Get all data points (not just selected countries) for brushing
         const allData = prepareScatterplotDataForBrushing();
 
-        // Find points within brush selection from all available data
+        // Encontra pontos dentro da selecao de brush 
         const brushedCountries = new Set();
         allData.forEach(d => {
           if (d.x >= xMin && d.x <= xMax && d.y >= yMin && d.y <= yMax) {
@@ -371,7 +435,6 @@ function createScatterplot(selector = '#scatterplot') {
           }
         });
 
-        // Update point styling - only visible points can be styled
         svg.selectAll('.circle')
           .attr('opacity', d => {
             const isInBrush = d.x >= xMin && d.x <= xMax && d.y >= yMin && d.y <= yMax;
@@ -386,8 +449,12 @@ function createScatterplot(selector = '#scatterplot') {
             return isInBrush ? '#ff6600' : 'none';
           });
 
+        // Tras pontos brushed para a frente para visibilidade
+        svg.selectAll('.circle')
+          .filter(d => d.x >= xMin && d.x <= xMax && d.y >= yMin && d.y <= yMax)
+          .raise();
+
       } else {
-        // No selection - reset all points to normal styling
         svg.selectAll('.circle')
           .each(function(d) {
             const choroplethSelected = window.getChoroplethSelectedCountries();
@@ -398,26 +465,28 @@ function createScatterplot(selector = '#scatterplot') {
               .attr('stroke-width', isChoroplethSelected ? 2 : 0)
               .attr('stroke', isChoroplethSelected ? window.getCountryColor(d.country) : 'none');
           });
+
+        const chSelected = window.getChoroplethSelectedCountries();
+        svg.selectAll('.circle')
+          .filter(d => chSelected.includes(d.country))
+          .raise();
       }
 
     });
 
-  // Add zoom functionality
   const zoom = d3.zoom()
     .scaleExtent([0.5, 10])
     .extent([[config.margin.left, config.margin.top], [config.width - config.margin.right, config.height - config.margin.bottom]])
     .filter(function(event) {
-      // Allow zoom only with wheel events or when shift key is pressed
       return event.type === 'wheel' || event.shiftKey;
     })
     .on('zoom', function(event) {
       const transform = event.transform;
 
-      // Create new scales based on zoom transform with capping at 0
+      // Cria nova escala
       let newXScale = transform.rescaleX(xScale);
       let newYScale = transform.rescaleY(yScale);
 
-      // Cap domains at 0 (no negative values)
       const xDomain = newXScale.domain();
       const yDomain = newYScale.domain();
 
@@ -431,7 +500,6 @@ function createScatterplot(selector = '#scatterplot') {
         newYScale = newYScale.copy().domain(cappedYDomain);
       }
 
-      // Update axes with new scales
       const newXAxis = isGdpOnX ?
         d3.axisBottom(newXScale)
           .tickValues([250, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000].filter(d => {
@@ -446,25 +514,29 @@ function createScatterplot(selector = '#scatterplot') {
       svg.select('.x-axis').call(newXAxis);
       svg.select('.y-axis').call(newYAxis);
 
-      // Get current visible domains
       const visibleXDomain = newXScale.domain();
       const visibleYDomain = newYScale.domain();
 
-      // Update circle positions and visibility
+      
       svg.selectAll('.circle')
         .attr('cx', d => newXScale(d.x))
         .attr('cy', d => newYScale(d.y))
         .style('display', d => {
-          // Hide points that are outside the current zoom domain
           const isVisible = d.x >= visibleXDomain[0] && d.x <= visibleXDomain[1] &&
                            d.y >= visibleYDomain[0] && d.y <= visibleYDomain[1];
           return isVisible ? 'block' : 'none';
         });
 
-      // Update regression line if it exists
+      // Mantem pontos highlighted a frente
+      const currentlySelected = window.getChoroplethSelectedCountries();
+      svg.selectAll('.circle')
+        .filter(d => currentlySelected.includes(d.country))
+        .raise();
+
+
       const regressionLine = svg.select('.regression-line');
       if (!regressionLine.empty()) {
-        // Filter regression line data to only include visible points
+
         const visibleData = scatterplotData.filter(d =>
           d.x >= visibleXDomain[0] && d.x <= visibleXDomain[1] &&
           d.y >= visibleYDomain[0] && d.y <= visibleYDomain[1]
@@ -478,7 +550,7 @@ function createScatterplot(selector = '#scatterplot') {
 
             let lineData;
             if (isGdpOnX) {
-              // For logarithmic regression, create more points for smooth curve
+
               const logXMin = Math.log(xMin);
               const logXMax = Math.log(xMax);
               const numPoints = 30;
@@ -491,7 +563,7 @@ function createScatterplot(selector = '#scatterplot') {
                 lineData.push({ x, y });
               }
             } else {
-              // Linear regression for non-logarithmic cases
+
               lineData = [
                 { x: xMin, y: visibleRegression.slope * xMin + visibleRegression.intercept },
                 { x: xMax, y: visibleRegression.slope * xMax + visibleRegression.intercept }
@@ -502,7 +574,7 @@ function createScatterplot(selector = '#scatterplot') {
               .x(d => newXScale(d.x))
               .y(d => newYScale(d.y))(lineData));
 
-            // Update R² display
+
             svg.select('.regression-info')
               .text(`R² = ${visibleRegression.rSquared.toFixed(3)}`);
           }
@@ -512,17 +584,50 @@ function createScatterplot(selector = '#scatterplot') {
         }
       }
 
-      // Update brush extent to match zoom
+      // Update brush para corresponder a zoom
       brushGroup.call(brush.move, null);
     });
 
-  // Apply zoom to the entire SVG
+
   svg.call(zoom);
 
-  // Add brush to SVG (after zoom so brush can override zoom events)
+
   const brushGroup = svg.append('g')
     .attr('class', 'brush')
     .call(brush);
+
+  if (!container.node().__brushActive) {
+    brushGroup.style('display', 'none');
+  }
+
+  brushButton.on('click', function() {
+    const active = !container.node().__brushActive;
+    container.node().__brushActive = active;
+
+    brushGroup.style('display', active ? null : 'none');
+
+    // Apaga selecao quando brush desativa
+    if (!active) {
+      brushGroup.call(brush.move, null);
+      svg.selectAll('.circle')
+        .each(function(d) {
+          const choroplethSelected = window.getChoroplethSelectedCountries();
+          const isChoroplethSelected = choroplethSelected.includes(d.country);
+
+          d3.select(this)
+            .attr('opacity', isChoroplethSelected ? 1 : 0.8)
+            .attr('stroke-width', isChoroplethSelected ? 2 : 0)
+            .attr('stroke', isChoroplethSelected ? window.getCountryColor(d.country) : 'none');
+        });
+    }
+
+    d3.select(this)
+      .text('🖌️')
+      .attr('title', active ? 'Disable Brush' : 'Enable Brush')
+      .attr('aria-pressed', active ? 'true' : 'false')
+      .style('border-color', active ? '#ff6600' : '#ccc')
+      .style('box-shadow', active ? '0 0 6px rgba(255,102,0,0.25)' : 'none');
+  });
 }
 
 function calculateRegression(data, isLogarithmic = false) {
@@ -534,19 +639,14 @@ function calculateRegression(data, isLogarithmic = false) {
   let xValues, xMean, yMean;
 
   if (isLogarithmic) {
-    // For logarithmic regression: y = a * ln(x) + b
-    // Transform x values to ln(x)
     xValues = data.map(d => Math.log(d.x));
   } else {
-    // For linear regression: y = a * x + b
     xValues = data.map(d => d.x);
   }
 
-  // Calculate means
   xMean = d3.mean(xValues);
   yMean = d3.mean(yValues);
 
-  // Calculate regression coefficients
   let numerator = 0;
   let denominator = 0;
   let totalSumSquares = 0;
@@ -560,7 +660,6 @@ function calculateRegression(data, isLogarithmic = false) {
   const slope = numerator / denominator;
   const intercept = yMean - slope * xMean;
 
-  // Calculate R-squared
   let residualSumSquares = 0;
   for (let i = 0; i < n; i++) {
     const predicted = slope * xValues[i] + intercept;
@@ -571,7 +670,6 @@ function calculateRegression(data, isLogarithmic = false) {
   return { slope, intercept, rSquared };
 }
 
-// Keep the old function for backward compatibility
 function calculateLinearRegression(data) {
   return calculateRegression(data, false);
 }

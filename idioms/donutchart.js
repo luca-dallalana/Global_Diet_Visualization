@@ -79,7 +79,8 @@ function createDonutChart(selector = '#donutchart') {
     .append('svg')
     .attr('width', width)
     .attr('height', height)
-    .style('margin-left', '70px')      // Centraliza o gráfico
+    .style('display', 'block')
+    .style('margin', '0 auto')
     .style('margin-top', '10px');
 
   const g = svg.append('g')
