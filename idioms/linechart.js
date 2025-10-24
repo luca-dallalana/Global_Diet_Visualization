@@ -79,7 +79,7 @@ function createLineChart(selector = '#linechart') {
   // Configuração das dimensões
   const width = 500;
   const height = 250;
-  const margin = { top: 20, right: 80, bottom: 40, left: 50 };
+  const margin = { top: 20, right: 80, bottom: 40, left: 57 };
 
   // Agrupa dados por país
   const dataByCountry = d3.group(filteredData, d => d.country);

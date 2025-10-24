@@ -17,7 +17,7 @@ function getChartConfig() {
   return {
     width: 500,
     height: 250,
-    margin: { top: 20, right: 40, bottom: 40, left: 50 }
+    margin: { top: 20, right: 40, bottom: 40, left: 57 }
   };
 }
 
